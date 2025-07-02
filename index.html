@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -19,11 +20,20 @@
             colors: {
               'primary-green': '#004D25',
               'accent-gold': '#D4AF37',
+              // Light Mode Colors
               'primary': '#1A1A1A',
               'secondary': '#6B7280',
               'app-light': '#F0F4F2',
               'ui-border': '#E5E7EB',
               'chat-user': '#D9FDD3',
+              // Dark Mode Colors
+              'dark-primary': '#111827', // Gray 900
+              'dark-secondary': '#374151', // Gray 700
+              'dark-app-light': '#1F2937', // Gray 800
+              'dark-ui-border': '#4B5563', // Gray 600
+              'dark-chat-user': '#059669', // Emerald 600
+              'dark-text-primary': '#F9FAFB', // Gray 50
+              'dark-text-secondary': '#9CA3AF', // Gray 400
             },
             backgroundImage: {
               'adire-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23004D25' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
@@ -56,6 +66,9 @@
         border-right: 10px solid transparent;
         transform: rotate(45deg);
       }
+      html.dark .bubble-tail-user::after {
+        border-top-color: #059669; /* dark-chat-user */
+      }
       .bubble-tail-ai::after {
         content: '';
         position: absolute;
@@ -68,10 +81,17 @@
         border-right: 10px solid transparent;
         transform: rotate(-45deg);
       }
+       html.dark .bubble-tail-ai::after {
+        border-top-color: #374151; /* dark-secondary */
+      }
        .shimmer {
         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
         background-size: 200% 100%;
         animation: shimmer 1.5s infinite;
+      }
+      html.dark .shimmer {
+         background: linear-gradient(90deg, #374151 25%, #4B5563 50%, #374151 75%);
+         background-size: 200% 100%;
       }
 
       @keyframes shimmer {
@@ -112,6 +132,17 @@
       .markdown-content p:not(:last-child) {
         margin-bottom: 0.75rem;
       }
+      .markdown-content blockquote {
+        border-left: 4px solid #D4AF37; /* accent-gold */
+        padding-left: 1rem;
+        margin: 0.75rem 0;
+        color: #6B7280; /* secondary */
+        font-style: italic;
+      }
+       html.dark .markdown-content blockquote {
+        color: #9CA3AF; /* dark-text-secondary */
+      }
+
 
       .toast-enter-active {
         opacity: 1;
@@ -184,11 +215,12 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.1.0",
-    "react/": "https://esm.sh/react@^19.1.0/",
     "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.7.0",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.6.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.7.0"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.2"
   }
 }
 </script>

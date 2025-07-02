@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import ListPanel from './components/layout/ListPanel';
 import MainPanel from './components/layout/MainPanel';
@@ -10,21 +11,43 @@ import GlobalHeader from './components/layout/GlobalHeader';
 import AuthOverlay from './components/auth/AuthOverlay';
 import { useAppState, useAppDispatch } from './context/AppContext';
 import { useWindowSize } from './hooks/useWindowSize';
-import ProfileCardOverlay from './components/common/ProfileCardOverlay';
 import QuietSpace from './components/common/QuietSpace';
+import { Icons } from './constants';
+
+const OfflineBanner: React.FC = () => (
+    <div className="bg-red-600 text-white text-center text-sm py-1 font-semibold">
+        You are currently offline. Some features may not be available.
+    </div>
+);
+
 
 const App: React.FC = () => {
-    const { activeChatId, isProfileOverlayVisible, isAuthOverlayVisible, profileCardUser, isQuietSpaceActive } = useAppState();
+    const { activeChatId, isAuthOverlayVisible, sidebarProfileId, isQuietSpaceActive, isLoadingAuth } = useAppState();
     const dispatch = useAppDispatch();
     const { width } = useWindowSize();
     const isDesktop = width ? width >= 1024 : false;
     
-    const showMainPanelOnMobile = !!activeChatId;
     const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(false);
     const [isWelcomeCheckComplete, setIsWelcomeCheckComplete] = useState<boolean>(false);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-    const isMobileProfileOverlayVisible = !isDesktop && isProfileOverlayVisible && !!activeChatId;
 
+    // The right sidebar acts as an overlay on mobile if either a chat or a profile is active.
+    const isRightSidebarOverlayVisible = !isDesktop && (!!activeChatId || !!sidebarProfileId);
+    const showListPanel = !isRightSidebarOverlayVisible;
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         try {
@@ -60,8 +83,12 @@ const App: React.FC = () => {
         setShowWelcomeScreen(false);
     };
     
-    if (!isWelcomeCheckComplete) {
-        return null;
+    if (isLoadingAuth || !isWelcomeCheckComplete) {
+        return (
+            <div className="fixed inset-0 bg-app-light dark:bg-dark-primary z-50 flex items-center justify-center">
+              <Icons.FlyingFlagLogo className="w-24 h-24 animate-pulse" />
+            </div>
+        );
     }
     
     if (showWelcomeScreen) {
@@ -73,23 +100,22 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="bg-app-light h-screen w-screen font-sans text-primary overflow-hidden flex flex-col">
+        <div className="bg-app-light dark:bg-dark-primary h-screen w-screen font-sans text-primary dark:text-dark-text-primary overflow-hidden flex flex-col">
             <GlobalHeader />
+            {!isOnline && <OfflineBanner />}
             <div className="flex flex-1 min-h-0">
                 {/* Left Panel (List) - Always visible on desktop, conditionally on mobile */}
                 <div className={`
                     w-full lg:w-[350px] lg:flex-shrink-0
-                    ${showMainPanelOnMobile ? 'hidden lg:flex' : 'flex'}
-                    ${isMobileProfileOverlayVisible ? 'hidden' : 'flex'}
+                    ${showListPanel ? 'flex' : 'hidden lg:flex'}
                 `}>
                    <ListPanel />
                 </div>
                 
-                {/* Center Panel (Main Content) */}
+                {/* Center Panel (Main Content) - Shown on desktop or if a chat/profile is active on mobile */}
                 <main className={`
                     flex-1 bg-adire-pattern relative min-w-0
-                    ${!showMainPanelOnMobile ? 'hidden' : 'flex'} lg:flex
-                    ${isMobileProfileOverlayVisible ? 'hidden' : 'flex'}
+                    ${!showListPanel ? 'flex' : 'hidden lg:flex'}
                 `}>
                      <MainPanel />
                 </main>
@@ -100,21 +126,20 @@ const App: React.FC = () => {
                          <RightSidebar />
                     </div>
                 )}
-
-                {/* Mobile Profile Overlay */}
-                {isMobileProfileOverlayVisible && (
-                    <div className="fixed inset-0 bg-white z-40 lg:hidden animate-fade-in-down">
+                
+                {/* Mobile Sidebar as Overlay */}
+                {isRightSidebarOverlayVisible && (
+                     <div className="fixed inset-0 bg-white dark:bg-dark-primary z-40 lg:hidden animate-fade-in-down">
                         <RightSidebar />
                     </div>
                 )}
             </div>
             
-             <div className={`lg:hidden ${isMobileProfileOverlayVisible ? 'hidden' : ''}`}>
+             <div className={`lg:hidden ${isRightSidebarOverlayVisible ? 'hidden' : ''}`}>
                 <BottomNavBar />
             </div>
              <Toast />
              {isAuthOverlayVisible && <AuthOverlay />}
-             {profileCardUser && <ProfileCardOverlay />}
         </div>
     );
 };

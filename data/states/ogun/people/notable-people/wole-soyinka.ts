@@ -19,6 +19,13 @@ export const woleSoyinkaProfile: Profile = {
         'Taught at several prestigious universities, including Obafemi Awolowo University, Harvard, and Yale.',
         'A lifelong political activist, fiercely critical of authoritarianism and corruption.',
     ],
+    projects: [
+        'Literary Work: Authored iconic plays such as "The Lion and the Jewel," "Kongi\'s Harvest," and "Death and the King\'s Horseman."',
+        'Literary Work: Wrote the prison memoir "The Man Died: Prison Notes of Wole Soyinka."',
+        'Literary Work: Penned celebrated poetry collections and novels like "The Interpreters."',
+        'Activism: Founded the "Pyrates Confraternity," Nigeria\'s first confraternity, initially as an anti-corruption and social justice student group.',
+        'Activism: Lifelong advocacy for human rights and democracy in Nigeria, often leading to his arrest and exile.'
+    ],
     legacyAndImpact: 'Soyinka is a global literary icon whose works explore the complexities of African culture, spirituality, and politics. His use of myth, folklore, and satire has had a profound influence on generations of writers. Beyond literature, his unwavering activism and "intellectual conscience" role have made him a powerful voice for democracy and human rights in Nigeria and beyond.',
     awardsAndHonours: [
         'Nobel Prize in Literature (1986).',

@@ -19,6 +19,13 @@ export const ngoziOkonjoIwealaProfile: Profile = {
         'Led the team that negotiated a massive $18 billion debt write-off for Nigeria from the Paris Club in 2005.',
         'Appointed Director-General of the World Trade Organization (WTO) in 2021, becoming the first woman and first African to hold the office.',
     ],
+    projects: [
+        'Policy Initiative: Led the negotiations that secured an $18 billion debt cancellation from the Paris Club of creditors for Nigeria in 2005.',
+        'Institutional Reform: Spearheaded the implementation of the Treasury Single Account (TSA) and the Integrated Payroll and Personnel Information System (IPPIS) to reduce corruption.',
+        'Economic Management: Established the Nigerian Sovereign Investment Authority (NSIA) to manage excess oil revenues.',
+        'Global Health: Chaired the Board of GAVI, the Vaccine Alliance, raising billions to immunize children in poor countries.',
+        'International Trade: Leading the World Trade Organization (WTO) to address global trade challenges, including pandemic response and e-commerce.'
+    ],
     legacyAndImpact: 'Okonjo-Iweala is globally renowned for her work in economic reform, transparency, and fighting corruption. Her efforts to improve Nigeria\'s macroeconomic management, including implementing an oil-price-based fiscal rule, have had a lasting impact. Her leadership at the WTO is focused on addressing global challenges like the pandemic recovery, trade inequality, and sustainable development.',
     awardsAndHonours: [
         'Forbes "African of the Year" (2020).',

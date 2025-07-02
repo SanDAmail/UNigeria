@@ -1,8 +1,8 @@
-
-import React, { createContext, useReducer, useContext, Dispatch, ReactNode } from 'react';
-import { PersonaType, ChatListDetail, UserProfile, Topic, PersonSubtype, ForumSubTab, Message, ForumCategory } from '../types';
-import { TOPICS_DATA, INITIAL_FORUM_CATEGORIES } from '../constants';
-import { clearChatHistory } from '../services/dbService';
+import React, { createContext, useReducer, useContext, Dispatch, ReactNode, useEffect } from 'react';
+import { PersonaType, ChatListDetail, UserProfile, Report, PersonSubtype, TownHallSubTab, Message, TownHallCategory, Session, User, Persona } from '../types';
+import { clearAllLocalChats, getTownHallCategories, getReports } from '../services/dbService';
+import { supabase, upsertProfile } from '../services/supabaseService';
+import { PERSONA_LIST } from '../constants';
 
 export enum ListPanelTab {
   CHATS = 'chats',
@@ -10,9 +10,14 @@ export enum ListPanelTab {
   PEOPLE_CURRENT = 'people_current',
   PEOPLE_FORMER = 'people_former',
   PEOPLE_NOTABLE = 'people_notable',
-  FORUMS = 'forums',
+  TOWN_HALLS = 'town_halls',
   UNIGERIANS = 'unigerians',
   QUIET = 'quiet',
+}
+
+export enum NigeriaSubTab {
+  ALL_STATES = 'all_states',
+  COMPARE = 'compare',
 }
 
 interface ToastState {
@@ -21,52 +26,70 @@ interface ToastState {
   type: 'success' | 'error';
 }
 
+type Theme = 'light' | 'dark';
+
 interface AppState {
   activeTab: ListPanelTab;
   activeChatId: string | null;
-  activeForumCategory: string | null;
-  activeTopicId: string | null;
+  activeTownHallCategory: string | null;
+  activeReportId: string | null;
   chatListDetails: { [chatId: string]: ChatListDetail };
-  topics: { [categoryId: string]: Topic[] };
-  forumCategories: ForumCategory[];
+  reports: Report[];
+  townHallCategories: TownHallCategory[];
   userProfile: UserProfile;
   activeSystemView: 'settings' | null;
   toast: ToastState | null;
   isAuthenticated: boolean;
-  isProfileOverlayVisible: boolean;
   isAuthOverlayVisible: boolean;
   authOverlayMode: 'login' | 'register' | null;
-  forumSubTab: ForumSubTab;
-  profileCardUser: UserProfile | null;
+  townHallSubTab: TownHallSubTab;
+  townHallFilters: { state: string; lga: string; };
+  nigeriaSubTab: NigeriaSubTab;
+  stateComparisonIds: { state1: string | null; state2: string | null };
+  sidebarProfileId: string | null;
   isQuietSpaceActive: boolean;
+  session: Session | null;
+  isLoadingAuth: boolean;
+  unreadCounts: { [chatId: string]: number };
+  theme: Theme;
 }
 
 type Action =
   | { type: 'SET_ACTIVE_TAB'; payload: ListPanelTab }
   | { type: 'SET_ACTIVE_CHAT'; payload: { type: PersonaType, id: string } }
   | { type: 'CLEAR_ACTIVE_CHAT' }
-  | { type: 'SET_ACTIVE_FORUM_CATEGORY'; payload: string | null }
-  | { type: 'SET_ACTIVE_TOPIC'; payload: string | null }
+  | { type: 'SET_ACTIVE_TOWNHALL_CATEGORY'; payload: string | null }
+  | { type: 'SET_ACTIVE_REPORT'; payload: string | null }
   | { type: 'SET_CHAT_LIST_DETAILS'; payload: { [chatId: string]: ChatListDetail } }
   | { type: 'UPDATE_CHAT_LIST_DETAIL'; payload: { chatId: string; detail: ChatListDetail } }
-  | { type: 'ADD_TOPIC'; payload: { categoryId: string; topic: Topic } }
-  | { type: 'DELETE_TOPIC'; payload: { categoryId: string; topicId: string } }
-  | { type: 'ADD_FORUM_REPLIES'; payload: { categoryId: string; topicId: string; replies: Message[] } }
+  | { type: 'REMOVE_CHAT_LIST_DETAIL'; payload: { chatId: string } }
+  | { type: 'SET_TOWNHALL_DATA', payload: { categories: TownHallCategory[], reports: Report[] } }
+  | { type: 'ADD_REPORT'; payload: Report }
+  | { type: 'DELETE_REPORT'; payload: { reportId: string } }
+  | { type: 'INCREMENT_REPLY_COUNT', payload: { reportId: string }}
+  | { type: 'DECREMENT_REPLY_COUNT', payload: { reportId: string }}
   | { type: 'SET_USER_PROFILE', payload: UserProfile }
   | { type: 'SET_ACTIVE_SYSTEM_VIEW', payload: 'settings' | null }
   | { type: 'SHOW_TOAST', payload: { message: string, type?: 'success' | 'error' } }
   | { type: 'HIDE_TOAST' }
-  | { type: 'LOGIN' }
   | { type: 'LOGOUT' }
-  | { type: 'SHOW_PROFILE_OVERLAY' }
-  | { type: 'HIDE_PROFILE_OVERLAY' }
   | { type: 'SHOW_AUTH_OVERLAY'; payload: 'login' | 'register' }
   | { type: 'HIDE_AUTH_OVERLAY' }
   | { type: 'GO_HOME' }
-  | { type: 'SET_FORUM_SUB_TAB'; payload: ForumSubTab }
-  | { type: 'SHOW_PROFILE_CARD'; payload: UserProfile }
-  | { type: 'HIDE_PROFILE_CARD' }
-  | { type: 'TOGGLE_QUIET_SPACE' };
+  | { type: 'SET_TOWNHALL_SUB_TAB'; payload: TownHallSubTab }
+  | { type: 'SET_TOWNHALL_FILTERS'; payload: { state: string, lga: string } }
+  | { type: 'SET_NIGERIA_SUB_TAB'; payload: NigeriaSubTab }
+  | { type: 'SET_STATE_COMPARISON'; payload: { state1Id: string, state2Id: string } }
+  | { type: 'CLEAR_STATE_COMPARISON' }
+  | { type: 'SHOW_SIDEBAR_PROFILE'; payload: string }
+  | { type: 'HIDE_SIDEBAR_PROFILE' }
+  | { type: 'TOGGLE_QUIET_SPACE' }
+  | { type: 'SET_SESSION'; payload: Session | null }
+  | { type: 'SET_AUTH_LOADING'; payload: boolean }
+  | { type: 'SET_UNREAD_COUNTS'; payload: { [chatId: string]: number } }
+  | { type: 'INCREMENT_UNREAD_COUNT'; payload: { chatId: string } }
+  | { type: 'RESET_UNREAD_COUNT'; payload: { chatId: string } }
+  | { type: 'SET_THEME'; payload: Theme };
 
 const defaultUserProfile: UserProfile = {
   name: 'Citizen Ade',
@@ -74,95 +97,30 @@ const defaultUserProfile: UserProfile = {
   avatar: 'https://picsum.photos/seed/ade/40/40',
 };
 
-const loadUserProfile = (): UserProfile => {
-  try {
-    const storedProfile = localStorage.getItem('userProfile');
-    if (storedProfile) {
-      return JSON.parse(storedProfile);
-    }
-  } catch (e) {
-    console.error("Failed to load user profile from localStorage", e);
-  }
-  return defaultUserProfile;
-};
-
-const loadTopics = (): { [categoryId: string]: Topic[] } => {
-    try {
-        const storedTopics = localStorage.getItem('forumTopics');
-        if (storedTopics) {
-            return JSON.parse(storedTopics);
-        }
-    } catch (e) {
-        console.error("Failed to load topics from localStorage", e);
-    }
-    return TOPICS_DATA;
-}
-
-const saveTopics = (topics: { [categoryId: string]: Topic[] }) => {
-    try {
-        localStorage.setItem('forumTopics', JSON.stringify(topics));
-    } catch (e) {
-        console.error("Failed to save topics to localStorage", e);
-    }
-}
-
-const loadForumCategories = (): ForumCategory[] => {
-    try {
-        const stored = localStorage.getItem('forumCategories');
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (e) {
-        console.error("Failed to load forum categories from localStorage", e);
-    }
-    return INITIAL_FORUM_CATEGORIES;
-}
-
-const saveForumCategories = (categories: ForumCategory[]) => {
-    try {
-        localStorage.setItem('forumCategories', JSON.stringify(categories));
-    } catch (e) {
-        console.error("Failed to save forum categories to localStorage", e);
-    }
-}
-
-const loadAuthStatus = (): boolean => {
-    try {
-        const storedAuth = localStorage.getItem('isAuthenticated');
-        return storedAuth ? JSON.parse(storedAuth) : false;
-    } catch (e) {
-        console.error("Failed to load auth status from localStorage", e);
-        return false;
-    }
-}
-
-const saveAuthStatus = (isAuthed: boolean) => {
-    try {
-        localStorage.setItem('isAuthenticated', JSON.stringify(isAuthed));
-    } catch (e) {
-        console.error("Failed to save auth status to localStorage", e);
-    }
-}
-
-
 const initialState: AppState = {
   activeTab: ListPanelTab.CHATS,
   activeChatId: null,
-  activeForumCategory: null,
-  activeTopicId: null,
+  activeTownHallCategory: null,
+  activeReportId: null,
   chatListDetails: {},
-  topics: loadTopics(),
-  forumCategories: loadForumCategories(),
-  userProfile: loadUserProfile(),
+  reports: [],
+  townHallCategories: [],
+  userProfile: defaultUserProfile,
   activeSystemView: null,
   toast: null,
-  isAuthenticated: loadAuthStatus(),
-  isProfileOverlayVisible: false,
+  isAuthenticated: false,
   isAuthOverlayVisible: false,
   authOverlayMode: null,
-  forumSubTab: ForumSubTab.HOME,
-  profileCardUser: null,
+  townHallSubTab: TownHallSubTab.HOT_REPORTS,
+  townHallFilters: { state: '', lga: '' },
+  nigeriaSubTab: NigeriaSubTab.ALL_STATES,
+  stateComparisonIds: { state1: null, state2: null },
+  sidebarProfileId: null,
   isQuietSpaceActive: false,
+  session: null,
+  isLoadingAuth: true,
+  unreadCounts: {},
+  theme: 'light',
 };
 
 const AppStateContext = createContext<AppState>(initialState);
@@ -174,17 +132,55 @@ const appReducer = (state: AppState, action: Action): AppState => {
       if (action.payload === ListPanelTab.QUIET) {
         return { ...state, isQuietSpaceActive: true };
       }
-      return { ...state, activeTab: action.payload, isQuietSpaceActive: false };
-    case 'SET_ACTIVE_CHAT':
-      const chatId = `${action.payload.type}_${action.payload.id}`;
-      return { ...state, activeChatId: chatId, activeTopicId: null, activeForumCategory: null, activeSystemView: null, isProfileOverlayVisible: false, isQuietSpaceActive: false };
+      return { 
+          ...state, 
+          activeTab: action.payload, 
+          isQuietSpaceActive: false,
+          stateComparisonIds: { state1: null, state2: null }, // Reset comparison
+      };
+    case 'SET_ACTIVE_CHAT': {
+      let chatId = `${action.payload.type}_${action.payload.id}`;
+      if (action.payload.type === 'townhall') {
+        chatId = `townhall_${action.payload.id}`;
+      }
+      
+      const newUnreadCounts = { ...state.unreadCounts };
+      delete newUnreadCounts[chatId];
+      
+      const newChatListDetails = { ...state.chatListDetails };
+      if (!newChatListDetails[chatId]) {
+          const persona = PERSONA_LIST.find(p => p.id === action.payload.id && (p.type === action.payload.type || (action.payload.type === 'townhall' && p.type === 'townhall')));
+          if (persona) {
+              newChatListDetails[chatId] = {
+                  lastMessage: persona.description, 
+                  timestamp: Date.now()
+              };
+          }
+      }
+
+      return { 
+          ...state, 
+          activeChatId: chatId, 
+          activeReportId: null, 
+          activeTownHallCategory: null, 
+          activeSystemView: null, 
+          sidebarProfileId: null, 
+          isQuietSpaceActive: false, 
+          stateComparisonIds: { state1: null, state2: null }, 
+          unreadCounts: newUnreadCounts,
+          chatListDetails: newChatListDetails 
+      };
+    }
     case 'CLEAR_ACTIVE_CHAT':
-      return { ...state, activeChatId: null, activeTopicId: null, isProfileOverlayVisible: false };
-    case 'SET_ACTIVE_FORUM_CATEGORY':
-        return { ...state, activeForumCategory: action.payload, activeChatId: null, activeTopicId: null, activeSystemView: null, isQuietSpaceActive: false };
-    case 'SET_ACTIVE_TOPIC':
-        const topicChatId = `forum_${state.activeForumCategory}_${action.payload}`;
-        return { ...state, activeTopicId: action.payload, activeChatId: topicChatId, activeSystemView: null, isQuietSpaceActive: false };
+      return { ...state, activeChatId: null, activeReportId: null, sidebarProfileId: null, stateComparisonIds: { state1: null, state2: null } };
+    case 'SET_ACTIVE_TOWNHALL_CATEGORY':
+        return { ...state, activeTownHallCategory: action.payload, activeChatId: null, activeReportId: null, activeSystemView: null, sidebarProfileId: null, isQuietSpaceActive: false, stateComparisonIds: { state1: null, state2: null } };
+    case 'SET_ACTIVE_REPORT': {
+        const report = state.reports.find(t => t.id === action.payload);
+        if (!report) return state; // Report not found
+        const reportChatId = `townhall_${report.id}`;
+        return { ...state, activeReportId: action.payload, activeChatId: reportChatId, activeSystemView: null, sidebarProfileId: null, isQuietSpaceActive: false, stateComparisonIds: { state1: null, state2: null } };
+    }
     case 'SET_CHAT_LIST_DETAILS':
         return { ...state, chatListDetails: action.payload };
     case 'UPDATE_CHAT_LIST_DETAIL':
@@ -195,126 +191,59 @@ const appReducer = (state: AppState, action: Action): AppState => {
                 [action.payload.chatId]: action.payload.detail 
             } 
         };
-    case 'ADD_TOPIC': {
-        const { categoryId, topic } = action.payload;
-        const newTopics = {
-            ...state.topics,
-            [categoryId]: [...(state.topics[categoryId] || []), topic],
-        };
-        saveTopics(newTopics);
-
-        // Update category stats
-        const newCategories = state.forumCategories.map(cat => {
-            if (cat.id === categoryId) {
-                return {
-                    ...cat,
-                    topics: cat.topics + 1,
-                    posts: cat.posts + 1 // The first post is also counted
-                };
-            }
-            return cat;
-        });
-        saveForumCategories(newCategories);
-
-        return { ...state, topics: newTopics, forumCategories: newCategories };
+    case 'REMOVE_CHAT_LIST_DETAIL': {
+      const { [action.payload.chatId]: _, ...newDetails } = state.chatListDetails;
+      return { ...state, chatListDetails: newDetails };
     }
-    case 'DELETE_TOPIC': {
-        const { categoryId, topicId } = action.payload;
-        if (!state.topics[categoryId]) {
-            return state;
-        }
+    case 'SET_TOWNHALL_DATA':
+        return { ...state, townHallCategories: action.payload.categories, reports: action.payload.reports };
+    case 'ADD_REPORT':
+        return { ...state, reports: [action.payload, ...state.reports] };
+    case 'DELETE_REPORT': {
+        const { reportId } = action.payload;
+        const reportToDelete = state.reports.find(t => t.id === reportId);
+        if (!reportToDelete) return state;
 
-        const topicToDelete = state.topics[categoryId].find(t => t.id === topicId);
-        const postCountInTopic = topicToDelete ? topicToDelete.replyCount + 1 : 1;
-
-        const newTopics = {
-            ...state.topics,
-            [categoryId]: state.topics[categoryId].filter(t => t.id !== topicId),
-        };
-        saveTopics(newTopics);
-
-        // Update category stats
-        const newCategories = state.forumCategories.map(cat => {
-            if (cat.id === categoryId) {
-                return {
-                    ...cat,
-                    topics: Math.max(0, cat.topics - 1),
-                    posts: Math.max(0, cat.posts - postCountInTopic)
-                };
-            }
-            return cat;
-        });
-        saveForumCategories(newCategories);
-
-        const chatIdToDelete = `forum_${categoryId}_${topicId}`;
-        clearChatHistory(chatIdToDelete);
+        const chatIdToDelete = `townhall_${reportId}`;
 
         return { 
             ...state, 
-            topics: newTopics,
-            forumCategories: newCategories,
+            reports: state.reports.filter(t => t.id !== reportId),
             activeChatId: state.activeChatId === chatIdToDelete ? null : state.activeChatId,
-            activeTopicId: state.activeTopicId === topicId ? null : state.activeTopicId
+            activeReportId: state.activeReportId === reportId ? null : state.activeReportId
         };
     }
-    case 'ADD_FORUM_REPLIES': {
-      const { categoryId, topicId, replies } = action.payload;
-      const replyCount = replies.length;
-      if (replyCount === 0) return state;
-
-      const lastReply = replies[replies.length - 1];
-      const lastReplierName = lastReply.authorInfo?.name || 'AI';
-
-      const newTopics = {
-          ...state.topics,
-          [categoryId]: (state.topics[categoryId] || []).map(topic => {
-              if (topic.id === topicId) {
-                  return {
-                      ...topic,
-                      replyCount: topic.replyCount + replyCount,
-                      lastReply: `by ${lastReplierName}`
-                  };
-              }
-              return topic;
-          })
-      };
-      saveTopics(newTopics);
-
-      const newCategories = state.forumCategories.map(cat => {
-          if (cat.id === categoryId) {
-              return { ...cat, posts: cat.posts + replyCount };
-          }
-          return cat;
-      });
-      saveForumCategories(newCategories);
-
-      return { ...state, topics: newTopics, forumCategories: newCategories };
+    case 'INCREMENT_REPLY_COUNT': {
+        return {
+            ...state,
+            reports: state.reports.map(report => 
+                report.id === action.payload.reportId 
+                ? { ...report, reply_count: report.reply_count + 1 }
+                : report
+            )
+        };
+    }
+    case 'DECREMENT_REPLY_COUNT': {
+        return {
+            ...state,
+            reports: state.reports.map(report => 
+                report.id === action.payload.reportId && report.reply_count > 0
+                ? { ...report, reply_count: report.reply_count - 1 }
+                : report
+            )
+        };
     }
     case 'SET_USER_PROFILE':
-        try {
-            localStorage.setItem('userProfile', JSON.stringify(action.payload));
-        } catch (e) {
-            console.error("Failed to save user profile to localStorage", e);
-        }
-        return { ...state, userProfile: action.payload };
+      return { ...state, userProfile: action.payload };
     case 'SET_ACTIVE_SYSTEM_VIEW':
-        return { ...state, activeSystemView: action.payload, activeChatId: null, activeTopicId: null, activeForumCategory: null, isQuietSpaceActive: false };
+        return { ...state, activeSystemView: action.payload, activeChatId: null, activeReportId: null, activeTownHallCategory: null, sidebarProfileId: null, isQuietSpaceActive: false, stateComparisonIds: { state1: null, state2: null } };
     case 'SHOW_TOAST':
       return { ...state, toast: { id: Date.now(), message: action.payload.message, type: action.payload.type || 'success' } };
     case 'HIDE_TOAST':
       return { ...state, toast: null };
-    case 'LOGIN':
-        saveAuthStatus(true);
-        return { ...state, isAuthenticated: true, isAuthOverlayVisible: false, authOverlayMode: null };
     case 'LOGOUT':
-        saveAuthStatus(false);
-        // Reset user profile to default on logout
-        localStorage.removeItem('userProfile');
-        return { ...state, isAuthenticated: false, userProfile: defaultUserProfile, toast: { id: Date.now(), message: "You have signed out.", type: 'success' } };
-    case 'SHOW_PROFILE_OVERLAY':
-        return { ...state, isProfileOverlayVisible: true, isQuietSpaceActive: false };
-    case 'HIDE_PROFILE_OVERLAY':
-        return { ...state, isProfileOverlayVisible: false };
+        supabase.auth.signOut();
+        return { ...state, toast: { id: Date.now(), message: "You have signed out.", type: 'success' } };
     case 'SHOW_AUTH_OVERLAY':
       return { ...state, isAuthOverlayVisible: true, authOverlayMode: action.payload, isQuietSpaceActive: false };
     case 'HIDE_AUTH_OVERLAY':
@@ -324,18 +253,39 @@ const appReducer = (state: AppState, action: Action): AppState => {
             ...state,
             activeTab: ListPanelTab.CHATS,
             activeChatId: null,
-            activeForumCategory: null,
-            activeTopicId: null,
+            activeTownHallCategory: null,
+            activeReportId: null,
             activeSystemView: null,
-            isProfileOverlayVisible: false,
+            sidebarProfileId: null,
             isQuietSpaceActive: false,
+            stateComparisonIds: { state1: null, state2: null },
         };
-    case 'SET_FORUM_SUB_TAB':
-        return { ...state, forumSubTab: action.payload };
-    case 'SHOW_PROFILE_CARD':
-        return { ...state, profileCardUser: action.payload };
-    case 'HIDE_PROFILE_CARD':
-        return { ...state, profileCardUser: null };
+    case 'SET_TOWNHALL_SUB_TAB':
+        return { ...state, townHallSubTab: action.payload };
+    case 'SET_TOWNHALL_FILTERS':
+        return { ...state, townHallFilters: action.payload };
+    case 'SET_NIGERIA_SUB_TAB':
+        return { ...state, nigeriaSubTab: action.payload };
+    case 'SET_STATE_COMPARISON':
+        return {
+            ...state,
+            stateComparisonIds: { state1: action.payload.state1Id, state2: action.payload.state2Id },
+            activeChatId: null,
+            activeTownHallCategory: null,
+            activeReportId: null,
+            activeSystemView: null,
+            sidebarProfileId: null,
+        };
+    case 'CLEAR_STATE_COMPARISON':
+        return {
+            ...state,
+            stateComparisonIds: { state1: null, state2: null },
+            nigeriaSubTab: NigeriaSubTab.ALL_STATES, // Return to the list view
+        };
+    case 'SHOW_SIDEBAR_PROFILE':
+        return { ...state, sidebarProfileId: action.payload, activeChatId: null };
+    case 'HIDE_SIDEBAR_PROFILE':
+        return { ...state, sidebarProfileId: null };
     case 'TOGGLE_QUIET_SPACE':
         const newQuietSpaceState = !state.isQuietSpaceActive;
         // If activating quiet space, no other changes needed.
@@ -348,13 +298,179 @@ const appReducer = (state: AppState, action: Action): AppState => {
             };
         }
         return { ...state, isQuietSpaceActive: newQuietSpaceState, activeTab: newQuietSpaceState ? ListPanelTab.QUIET : state.activeTab };
+    case 'SET_AUTH_LOADING':
+        return { ...state, isLoadingAuth: action.payload };
+    case 'SET_SESSION':
+        return { 
+            ...state, 
+            session: action.payload,
+            isAuthenticated: !!action.payload,
+        };
+     case 'SET_UNREAD_COUNTS':
+        return { ...state, unreadCounts: action.payload };
+    case 'INCREMENT_UNREAD_COUNT':
+        return {
+            ...state,
+            unreadCounts: {
+                ...state.unreadCounts,
+                [action.payload.chatId]: (state.unreadCounts[action.payload.chatId] || 0) + 1,
+            },
+        };
+    case 'RESET_UNREAD_COUNT':
+        const newCounts = { ...state.unreadCounts };
+        delete newCounts[action.payload.chatId];
+        return { ...state, unreadCounts: newCounts };
+     case 'SET_THEME':
+        return { ...state, theme: action.payload };
     default:
       return state;
   }
 };
 
+const UNREAD_COUNTS_KEY = 'unigeria_unread_counts';
+const THEME_KEY = 'unigeria_theme';
+const CHAT_LIST_DETAILS_KEY = 'unigeria_chat_list_details';
+
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  // Rehydrate state from localStorage on initial load
+  useEffect(() => {
+    try {
+        const storedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
+        if (storedTheme) {
+            dispatch({ type: 'SET_THEME', payload: storedTheme });
+        }
+
+        const storedCounts = localStorage.getItem(UNREAD_COUNTS_KEY);
+        if (storedCounts) {
+            dispatch({ type: 'SET_UNREAD_COUNTS', payload: JSON.parse(storedCounts) });
+        }
+
+        const storedDetails = localStorage.getItem(CHAT_LIST_DETAILS_KEY);
+        if (storedDetails) {
+            dispatch({ type: 'SET_CHAT_LIST_DETAILS', payload: JSON.parse(storedDetails) });
+        }
+
+    } catch (e) {
+        console.error("Failed to read from localStorage", e);
+    }
+  }, []);
+
+  // Persist state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+        localStorage.setItem(THEME_KEY, state.theme);
+        if (state.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    } catch (e) {
+        console.error("Failed to save theme to localStorage", e);
+    }
+  }, [state.theme]);
+
+  useEffect(() => {
+    try {
+        localStorage.setItem(UNREAD_COUNTS_KEY, JSON.stringify(state.unreadCounts));
+    } catch (e) {
+        console.error("Failed to save unread counts to localStorage", e);
+    }
+  }, [state.unreadCounts]);
+
+  useEffect(() => {
+    try {
+        localStorage.setItem(CHAT_LIST_DETAILS_KEY, JSON.stringify(state.chatListDetails));
+    } catch (e) {
+        console.error("Failed to save chat list details to localStorage", e);
+    }
+  }, [state.chatListDetails]);
+
+  // Effect to load global data (like Town Halls)
+  useEffect(() => {
+    const fetchGlobalData = async () => {
+        if (state.isAuthenticated) {
+            const [categories, reportsFromDb] = await Promise.all([
+                getTownHallCategories(),
+                getReports() // Initially fetch all reports
+            ]);
+            
+            const categoryStats = reportsFromDb.reduce((acc, report) => {
+                if (!acc[report.category_id]) {
+                    acc[report.category_id] = { reports: 0, posts: 0 };
+                }
+                acc[report.category_id].reports += 1;
+                acc[report.category_id].posts += (report.reply_count + 1);
+                return acc;
+            }, {} as { [key: string]: { reports: number, posts: number } });
+
+            const categoriesWithStats = categories.map(cat => ({
+                ...cat,
+                reports: categoryStats[cat.id]?.reports || 0,
+                posts: categoryStats[cat.id]?.posts || 0
+            }));
+            
+            dispatch({ type: 'SET_TOWNHALL_DATA', payload: { categories: categoriesWithStats, reports: reportsFromDb } });
+        } else {
+             dispatch({ type: 'SET_TOWNHALL_DATA', payload: { categories: [], reports: [] } });
+        }
+    };
+
+    fetchGlobalData();
+  }, [state.isAuthenticated]);
+
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+            // Clear all local data on auth change for data integrity
+            await clearAllLocalChats();
+            dispatch({ type: 'SET_CHAT_LIST_DETAILS', payload: {} });
+            dispatch({ type: 'SET_UNREAD_COUNTS', payload: {} });
+            localStorage.removeItem(UNREAD_COUNTS_KEY);
+            localStorage.removeItem(CHAT_LIST_DETAILS_KEY);
+        }
+
+        if (_event === 'PASSWORD_RECOVERY') {
+            dispatch({ type: 'SHOW_TOAST', payload: { message: "You can now sign in with your new password." } });
+            dispatch({ type: 'SHOW_AUTH_OVERLAY', payload: 'login' });
+        }
+
+        dispatch({ type: 'SET_SESSION', payload: session });
+
+        if (session) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profile) {
+                dispatch({ type: 'SET_USER_PROFILE', payload: { ...profile, email: session.user.email } });
+            } else if (_event === 'SIGNED_IN') {
+                 const newProfileData: UserProfile = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email!.split('@')[0],
+                    avatar: session.user.user_metadata?.avatar_url || `https://picsum.photos/seed/${session.user.id}/96/96`,
+                    title: session.user.user_metadata?.title || 'UNigeria Member'
+                };
+                await upsertProfile(newProfileData as any);
+                dispatch({ type: 'SET_USER_PROFILE', payload: newProfileData });
+            }
+        } else {
+             dispatch({ type: 'SET_USER_PROFILE', payload: defaultUserProfile });
+        }
+        dispatch({ type: 'SET_AUTH_LOADING', payload: false });
+    });
+
+    return () => {
+        subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <AppStateContext.Provider value={state}>
       <AppDispatchContext.Provider value={dispatch}>{children}</AppDispatchContext.Provider>

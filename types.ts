@@ -1,10 +1,12 @@
 import { ReactNode } from "react";
+import type { Session, User } from '@supabase/supabase-js';
 
 export enum PersonaType {
   STATE = "state",
   PERSON = "person",
   FORUM = "forum",
   UNIGERIAN = "unigerian",
+  TOWNHALL = "townhall",
 }
 
 export enum PersonSubtype {
@@ -13,16 +15,26 @@ export enum PersonSubtype {
   NOTABLE_PERSON = "Notable People",
 }
 
-export enum ForumSubTab {
-  HOME = 'home',
+export enum TownHallSubTab {
+  HOT_REPORTS = 'hot_reports',
   CATEGORIES = 'categories',
-  MY_TOPICS = 'my_topics'
+  MY_REPORTS = 'my_reports',
+  CANDIDATES = 'candidates',
 }
 
 export interface UserProfile {
+  id?: string; // From auth.users
   name: string;
   title: string;
   avatar: string;
+  email?: string; // From auth.users
+  state?: string;
+  lga?: string;
+  ward?: string;
+  is_candidate?: boolean;
+  is_representative?: boolean;
+  tenure_end_date?: string;
+  endorsement_count?: number;
 }
 
 export interface GroundingChunk {
@@ -37,6 +49,8 @@ export interface Message {
   text: string;
   sender: "user" | "ai" | string; // 'user' or author's name for forums
   timestamp: number;
+  updated_at?: number; // For tracking edits
+  likes?: string[]; // Array of user IDs who liked the post
   type?: "text" | "image" | "post";
   isStreaming?: boolean;
   isThinking?: boolean;
@@ -89,6 +103,8 @@ export interface Profile {
   legacyAndImpact?: string;
   awardsAndHonours?: string[];
   notableQuotes?: string[];
+  termEndDate?: string; // YYYY-MM-DD for sorting former leaders
+  projects?: string[]; // For developmental projects
 
   // UNigerian-specific
   hometown?: string;
@@ -113,30 +129,48 @@ export interface Profile {
   universities?: string[];
   region?: string;
   
-  // Forum-specific
+  // Town Hall-specific
   keyTopics?: string[];
   forumRules?: string[];
 }
 
-export interface ForumCategory {
+export interface TownHallCategory {
   id: string;
   name: string;
   description: string;
-  icon: ReactNode;
-  topics: number;
-  posts: number;
+  iconName: string; // Changed from ReactNode to string for DB storage
+  // reports and posts counts will be calculated on the client
+  reports?: number;
+  posts?: number;
 }
 
-export interface Topic {
-  id:string;
+export interface Report {
+  id: string;
   title: string;
+  author_id: string; // From Supabase
+  category_id: string; // From Supabase
+  created_at: string; // From Supabase
+  reply_count: number; // From Supabase
+  location?: {
+    state: string;
+    lga: string;
+    ward: string;
+  }
+  // Client-side populated fields
   author: {
     name: string;
     avatar: string;
   };
-  replyCount: number;
   lastReply: string;
-  categoryId: string;
+}
+
+export interface Endorsement {
+    id: string;
+    candidate_id: string;
+    endorser_id: string;
+    created_at: string;
+    election_cycle: string; // e.g., "2024-2026"
+    weight: number;
 }
 
 export interface ChatListItemData {
@@ -160,3 +194,5 @@ export interface ChatListDetail {
   lastMessage: string;
   timestamp: number;
 }
+
+export type { Session, User };

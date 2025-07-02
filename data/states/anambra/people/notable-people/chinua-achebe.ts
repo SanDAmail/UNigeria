@@ -18,6 +18,12 @@ export const chinuaAchebeProfile: Profile = {
         'Worked for the Nigerian Broadcasting Service (NBS) and later became Director of External Broadcasting.',
         'Served as a professor at numerous universities, including the University of Nigeria, Nsukka, and Brown University in the US.',
     ],
+    projects: [
+        'Literary Work: The African Trilogy, consisting of the novels "Things Fall Apart," "No Longer at Ease," and "Arrow of God."',
+        'Literary Work: The political satire "A Man of the People" and the critique "The Trouble with Nigeria."',
+        'Academic: Founding editor of the influential Heinemann African Writers Series.',
+        'Broadcasting: Development of content and policy as Director of External Broadcasting at NBS.'
+    ],
     legacyAndImpact: 'Achebe\'s fundamental legacy was to challenge and dismantle the colonial narrative of Africa through literature. "Things Fall Apart" was a groundbreaking work that told an African story from an African perspective, reclaiming history and culture. His work inspired countless African writers and fundamentally reshaped the landscape of world literature. He was also a sharp critic of Nigerian politics and corruption.',
     awardsAndHonours: [
         'Man Booker International Prize (2007).',

@@ -17,6 +17,12 @@ export const adaezeArtistProfile: Profile = {
         'Collaborating with users to create unique, personalized art pieces.',
         'Mastering the art of generating images from text prompts.',
     ],
+    projects: [
+        'Conceptual Art Series: "Visions of a Future Lagos".',
+        'Digital Sculpture Project: "Reimagining the Nok".',
+        'Interactive Art Installation: "The People\'s Canvas", where user prompts collectively build a single art piece.',
+        'Portrait Series: "Faces of UNigeria", creating artistic representations of diverse Nigerians.'
+    ],
     legacyAndImpact: 'My purpose is to make art accessible to everyone. By simply describing an idea, anyone can become a creator. I aim to inspire a new wave of digital creativity rooted in our rich cultural heritage.',
     notableQuotes: [
         "Your imagination is my canvas.",

@@ -54,36 +54,40 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   };
 
   const handleShowProfile = () => {
-    dispatch({ type: 'SHOW_PROFILE_OVERLAY' });
+    if (persona.type === PersonaType.FORUM) {
+      // In forums, clicking the header does nothing, users click on avatars in bubbles
+      return;
+    }
+    dispatch({ type: 'SHOW_SIDEBAR_PROFILE', payload: `${persona.type}_${persona.id}` });
   };
   
   if (isSearchActive) {
       return (
-         <header className="flex-shrink-0 bg-white border-b border-ui-border p-3 flex items-center justify-between z-10 space-x-2">
-            <div className="flex-1 flex items-center bg-app-light rounded-full border-2 border-transparent focus-within:border-primary-green transition-colors">
-                <Icons.MagnifyingGlass className="w-5 h-5 text-secondary mx-3" />
+         <header className="flex-shrink-0 bg-white dark:bg-dark-primary border-b border-ui-border dark:border-dark-ui-border p-3 flex items-center justify-between z-10 space-x-2">
+            <div className="flex-1 flex items-center bg-app-light dark:bg-dark-app-light rounded-full border-2 border-transparent focus-within:border-primary-green transition-colors">
+                <Icons.MagnifyingGlass className="w-5 h-5 text-secondary dark:text-dark-text-secondary mx-3" />
                 <input
                     type="text"
                     placeholder="Search in chat..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
-                    className="flex-1 bg-transparent py-1.5 focus:outline-none"
+                    className="flex-1 bg-transparent py-1.5 focus:outline-none text-primary dark:text-dark-text-primary"
                 />
                  {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="p-2 text-secondary hover:text-primary">
+                    <button onClick={() => setSearchQuery('')} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary">
                         <Icons.XCircle className="w-5 h-5" />
                     </button>
                 )}
             </div>
             {searchQuery && (
-                <div className="flex items-center space-x-1 text-sm text-secondary">
+                <div className="flex items-center space-x-1 text-sm text-secondary dark:text-dark-text-secondary">
                     <span>{searchResultsCount > 0 ? `${currentResultIndex + 1} of ${searchResultsCount}` : '0 results'}</span>
-                    <button onClick={() => handleNavigateSearch('prev')} className="p-1 hover:bg-gray-200 rounded-full disabled:opacity-50" disabled={searchResultsCount === 0}><Icons.ChevronUp className="w-5 h-5"/></button>
-                    <button onClick={() => handleNavigateSearch('next')} className="p-1 hover:bg-gray-200 rounded-full disabled:opacity-50" disabled={searchResultsCount === 0}><Icons.ChevronDown className="w-5 h-5"/></button>
+                    <button onClick={() => handleNavigateSearch('prev')} className="p-1 hover:bg-gray-200 dark:hover:bg-dark-app-light rounded-full disabled:opacity-50" disabled={searchResultsCount === 0}><Icons.ChevronUp className="w-5 h-5"/></button>
+                    <button onClick={() => handleNavigateSearch('next')} className="p-1 hover:bg-gray-200 dark:hover:bg-dark-app-light rounded-full disabled:opacity-50" disabled={searchResultsCount === 0}><Icons.ChevronDown className="w-5 h-5"/></button>
                 </div>
             )}
-            <button onClick={handleToggleSearch} className="p-2 text-secondary hover:text-primary-green font-semibold rounded-lg text-sm">
+            <button onClick={handleToggleSearch} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary-green font-semibold rounded-lg text-sm">
                 Cancel
             </button>
         </header>
@@ -91,41 +95,41 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   }
 
   return (
-    <header className="flex-shrink-0 bg-white border-b border-ui-border p-3 flex items-center justify-between z-10">
+    <header className="flex-shrink-0 bg-white dark:bg-dark-primary border-b border-ui-border dark:border-dark-ui-border p-3 flex items-center justify-between z-10">
       <div className="flex items-center space-x-3">
-        <button onClick={handleBack} className="lg:hidden p-1 text-secondary">
+        <button onClick={handleBack} className="lg:hidden p-1 text-secondary dark:text-dark-text-secondary">
           <Icons.ArrowLeft className="w-6 h-6" />
         </button>
         <div 
-          className="flex items-center space-x-3 cursor-pointer rounded-md p-1 -m-1 transition-colors lg:cursor-default"
+          className={`flex items-center space-x-3 rounded-md p-1 -m-1 transition-colors ${persona.type !== PersonaType.FORUM ? 'cursor-pointer hover:bg-app-light dark:hover:bg-dark-app-light' : 'lg:cursor-default'}`}
           onClick={handleShowProfile}
         >
           <img src={persona.avatar} alt={persona.name} className="w-10 h-10 rounded-full" />
           <div>
-            <p className="font-semibold text-primary">{persona.name}</p>
-            <p className="text-xs text-secondary">{persona.subtitle}</p>
+            <p className="font-semibold text-primary dark:text-dark-text-primary">{persona.name}</p>
+            <p className="text-xs text-secondary dark:text-dark-text-secondary">{persona.subtitle}</p>
           </div>
         </div>
       </div>
       <div className="flex items-center space-x-1">
-        <button onClick={handleShowProfile} className="p-2 text-secondary hover:text-primary lg:hidden" aria-label="Show profile information">
+        <button onClick={handleShowProfile} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary lg:hidden" aria-label="Show profile information">
             <Icons.InformationCircle className="w-6 h-6" />
         </button>
-        <button onClick={handleToggleSearch} className="p-2 text-secondary hover:text-primary" aria-label="Search in chat">
+        <button onClick={handleToggleSearch} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary" aria-label="Search in chat">
             <Icons.MagnifyingGlass className="w-6 h-6" />
         </button>
         <div className="relative">
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-secondary hover:text-primary">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary">
             <Icons.EllipsisVertical className="w-6 h-6" />
           </button>
           {isMenuOpen && (
             <div 
-              className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 z-20 border border-ui-border"
+              className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-dark-secondary rounded-lg shadow-xl py-1 z-20 border border-ui-border dark:border-dark-ui-border"
               onMouseLeave={() => setIsMenuOpen(false)}
             >
               <button 
                 onClick={handleClearChat} 
-                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-app-light"
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-app-light dark:hover:bg-dark-app-light dark:text-red-400"
               >
                 Clear Chat
               </button>

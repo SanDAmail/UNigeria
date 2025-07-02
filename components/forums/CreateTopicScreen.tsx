@@ -1,17 +1,15 @@
-
-
 import React, { useState } from 'react';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
-import { Topic, Message } from '../../types';
-import { saveChatHistory } from '../../services/dbService';
+import { Report, Message } from '../../types';
+import { addMessage, createReport } from '../../services/dbService';
 import { Icons } from '../../constants';
 
-interface CreateTopicScreenProps {
+interface CreateReportScreenProps {
     categoryId: string;
     onCancel: () => void;
 }
 
-const CreateTopicScreen: React.FC<CreateTopicScreenProps> = ({ categoryId, onCancel }) => {
+const CreateReportScreen: React.FC<CreateReportScreenProps> = ({ categoryId, onCancel }) => {
     const { userProfile } = useAppState();
     const dispatch = useAppDispatch();
     const [title, setTitle] = useState('');
@@ -20,105 +18,97 @@ const CreateTopicScreen: React.FC<CreateTopicScreenProps> = ({ categoryId, onCan
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !message.trim() || isSubmitting) {
+        if (!title.trim() || !message.trim() || isSubmitting || !userProfile.id || !userProfile.state || !userProfile.lga || !userProfile.ward) {
+            dispatch({type: 'SHOW_TOAST', payload: { message: "Cannot file report without a complete location in your profile.", type: 'error'}});
             return;
         }
         setIsSubmitting(true);
 
-        const newTopicId = `topic_${Date.now()}`;
-        const newTopic: Topic = {
-            id: newTopicId,
-            title: title.trim(),
-            author: userProfile,
-            replyCount: 0,
-            lastReply: `by ${userProfile.name}`,
-            categoryId,
-        };
-
-        const firstMessage: Message = {
-            id: `post_${Date.now()}`,
-            text: message.trim(),
-            sender: 'user', // user is the author
-            timestamp: Date.now(),
-            type: 'post',
-            authorInfo: userProfile,
-            isOriginalPost: true,
-        };
-
         try {
-            // Add topic to global state and save to local storage
-            dispatch({ type: 'ADD_TOPIC', payload: { categoryId, topic: newTopic } });
+            const location = { state: userProfile.state, lga: userProfile.lga, ward: userProfile.ward };
+            const newReport = await createReport(title.trim(), categoryId, userProfile.id, location);
 
-            // Save the first message to the chat history for this new topic
-            const chatId = `forum_${categoryId}_${newTopicId}`;
-            await saveChatHistory(chatId, [firstMessage]);
-            
-            dispatch({ type: 'SHOW_TOAST', payload: { message: 'Topic created successfully!' } });
+            if (!newReport) {
+                throw new Error("Failed to create report in the database.");
+            }
 
-            // Dispatch action to navigate to the new topic's chat screen
-            dispatch({ type: 'SET_ACTIVE_TOPIC', payload: newTopicId });
+            const firstMessage: Message = {
+                id: `post_${Date.now()}`,
+                text: message.trim(),
+                sender: userProfile.id,
+                timestamp: Date.now(),
+                type: 'post',
+                authorInfo: { name: userProfile.name, avatar: userProfile.avatar },
+                isOriginalPost: true,
+            };
+
+            const chatId = `townhall_${newReport.id}`;
+            await addMessage(chatId, firstMessage);
+
+            dispatch({ type: 'ADD_REPORT', payload: newReport });
+            dispatch({ type: 'SHOW_TOAST', payload: { message: 'Report filed successfully!' } });
+            dispatch({ type: 'SET_ACTIVE_REPORT', payload: newReport.id });
 
         } catch (error) {
-            console.error("Failed to create new topic:", error);
-            dispatch({ type: 'SHOW_TOAST', payload: { message: 'Could not create topic.', type: 'error' } });
+            console.error("Failed to create new report:", error);
+            dispatch({ type: 'SHOW_TOAST', payload: { message: 'Could not file report.', type: 'error' } });
             setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="w-full h-full bg-white flex flex-col">
-            <header className="p-4 border-b border-ui-border flex justify-between items-center">
+        <div className="w-full h-full bg-white dark:bg-dark-primary flex flex-col">
+            <header className="p-4 border-b border-ui-border dark:border-dark-ui-border flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                    <button onClick={onCancel} className="p-1 text-secondary">
+                    <button onClick={onCancel} className="p-1 text-secondary dark:text-dark-text-secondary">
                         <Icons.ArrowLeft className="w-6 h-6" />
                     </button>
-                    <h2 className="text-xl font-bold">Start a New Topic</h2>
+                    <h2 className="text-xl font-bold">File a New Report</h2>
                 </div>
                 <button 
                     onClick={onCancel}
-                    className="p-2 rounded-full hover:bg-app-light transition-colors"
+                    className="p-2 rounded-full hover:bg-app-light dark:hover:bg-dark-app-light transition-colors"
                     aria-label="Cancel"
                 >
-                    <Icons.XMark className="w-6 h-6 text-secondary" />
+                    <Icons.XMark className="w-6 h-6 text-secondary dark:text-dark-text-secondary" />
                 </button>
             </header>
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col p-6 overflow-y-auto">
                 <div className="flex-1 space-y-6">
                     <div>
-                        <label htmlFor="topic-title" className="block text-sm font-medium text-secondary mb-1">
-                            Topic Title
+                        <label htmlFor="report-title" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">
+                            Report Title
                         </label>
                         <input
-                            id="topic-title"
+                            id="report-title"
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="A clear and concise title for your discussion"
+                            placeholder="e.g., Broken pipeline on Ajao Street"
                             required
-                            className="w-full bg-app-light border border-transparent rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition"
+                            className="w-full bg-app-light dark:bg-dark-app-light border border-transparent rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"
                         />
                     </div>
                     <div>
-                        <label htmlFor="topic-message" className="block text-sm font-medium text-secondary mb-1">
-                            Your Message
+                        <label htmlFor="report-message" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">
+                            Describe the Issue
                         </label>
                         <textarea
-                            id="topic-message"
+                            id="report-message"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Write your opening post here. You can elaborate on your title, ask a question, or state your opinion."
+                            placeholder="Provide details about the issue. Be as specific as possible."
                             required
                             rows={10}
-                            className="w-full bg-app-light border border-transparent rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition resize-y"
+                            className="w-full bg-app-light dark:bg-dark-app-light border border-transparent rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition resize-y"
                         />
                     </div>
                      <div>
-                        <p className="text-sm font-medium text-secondary mb-2">You will be posting as:</p>
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-ui-border">
-                            <img src={userProfile.avatar} alt="Your Avatar" className="w-10 h-10 rounded-full"/>
+                        <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                             <Icons.InformationCircle className="w-8 h-8 text-blue-500 flex-shrink-0"/>
                             <div>
-                                <p className="font-semibold text-primary">{userProfile.name}</p>
-                                <p className="text-sm text-secondary">{userProfile.title}</p>
+                                <p className="font-semibold text-primary dark:text-dark-text-primary">Posting as {userProfile.name}</p>
+                                <p className="text-sm text-secondary dark:text-dark-text-secondary">This report will be publicly tagged with your location: {userProfile.ward}, {userProfile.lga}, {userProfile.state} State.</p>
                             </div>
                         </div>
                     </div>
@@ -135,9 +125,9 @@ const CreateTopicScreen: React.FC<CreateTopicScreenProps> = ({ categoryId, onCan
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Posting...
+                                Submitting...
                             </>
-                        ) : "Post Topic"}
+                        ) : "Submit Report"}
                     </button>
                 </div>
             </form>
@@ -145,4 +135,4 @@ const CreateTopicScreen: React.FC<CreateTopicScreenProps> = ({ categoryId, onCan
     );
 };
 
-export default CreateTopicScreen;
+export default CreateReportScreen;

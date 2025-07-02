@@ -1,7 +1,7 @@
 import React, { useState, useRef, KeyboardEvent, useEffect, useMemo } from 'react';
 import { Icons } from '../../constants';
 import QuickOptions from './QuickOptions';
-import { Persona, PersonaType, PersonSubtype } from '../../types';
+import { Message, Persona, PersonaType, PersonSubtype } from '../../types';
 import { ttsService } from '../../services/ttsService';
 
 // Browser compatibility
@@ -29,7 +29,7 @@ const getOptionsForPersona = (persona: Persona): string[] => {
             return ["What are some tourist attractions?", "Tell me about the economy.", "What is the culture like?", "List some famous people from here.", "What is the capital city?", "What are the biggest challenges?"];
         case PersonaType.UNIGERIAN:
             return ["Tell me about yourself.", `What is life like in ${persona.subtitle.split(' from ')[1]}?`, "What are your hopes for Nigeria?", "What is a typical day like for you?", "What are some local customs?", "What challenges do you face?"];
-        case PersonaType.FORUM:
+        case PersonaType.TOWNHALL:
             return ["Can you explain the new policy?", "What are the arguments for and against?", "How does this affect me?", "What is the historical context?", "Who are the key stakeholders?", "What are the potential economic impacts?"];
         default:
             return ["Tell me more", "Explain that further", "Summarize the key points", "Give me an example"];
@@ -40,9 +40,11 @@ interface MessageInputProps {
   onSendMessage: (text: string, imageFile: File | null) => void;
   persona: Persona;
   suggestedReplies: string[];
+  quotedMessage: Message | null;
+  onClearQuote: () => void;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, persona, suggestedReplies }) => {
+const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, persona, suggestedReplies, quotedMessage, onClearQuote }) => {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -59,6 +61,12 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, persona, sug
         }
     }
   }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    if(quotedMessage && textareaRef.current) {
+        textareaRef.current.focus();
+    }
+  }, [quotedMessage]);
 
   useEffect(() => {
     if (!isSpeechRecognitionSupported) {
@@ -169,26 +177,38 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, persona, sug
     return getOptionsForPersona(persona);
   }, [suggestedReplies, persona]);
 
-  const canAttachImage = persona.type !== PersonaType.FORUM && persona.id !== 'adaeze-artist';
+  const canAttachImage = persona.type !== PersonaType.TOWNHALL && persona.id !== 'adaeze-artist';
 
   return (
-    <footer className="flex-shrink-0 bg-white border-t border-ui-border p-3">
+    <footer className="flex-shrink-0 bg-white dark:bg-dark-primary border-t border-ui-border dark:border-dark-ui-border p-3">
       <QuickOptions onSelect={(t) => onSendMessage(t, null)} options={quickOptions} />
       
+       {quotedMessage && quotedMessage.authorInfo && (
+           <div className="mb-2 p-3 bg-app-light dark:bg-dark-app-light rounded-lg relative text-sm border-l-4 border-accent-gold">
+               <div className="flex justify-between items-center mb-1">
+                   <p className="font-semibold text-primary-green">Replying to {quotedMessage.authorInfo.name}</p>
+                   <button onClick={onClearQuote} className="p-1 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600">
+                       <Icons.XMark className="w-4 h-4 text-secondary dark:text-dark-text-secondary"/>
+                   </button>
+               </div>
+               <p className="text-secondary dark:text-dark-text-secondary truncate">{quotedMessage.text}</p>
+           </div>
+       )}
+
        {imagePreviewUrl && (
-          <div className="mb-2 p-2 bg-app-light rounded-lg relative w-28">
+          <div className="mb-2 p-2 bg-app-light dark:bg-dark-app-light rounded-lg relative w-28">
               <img src={imagePreviewUrl} alt="Preview" className="w-24 h-24 object-cover rounded-md" />
-              <button onClick={handleRemoveImage} className="absolute top-0 right-0 -mt-2 -mr-2 bg-primary text-white rounded-full p-0.5 hover:bg-red-500 transition-colors">
+              <button onClick={handleRemoveImage} className="absolute top-0 right-0 -mt-2 -mr-2 bg-primary dark:bg-dark-secondary text-white rounded-full p-0.5 hover:bg-red-500 transition-colors">
                   <Icons.XCircle className="w-5 h-5" />
               </button>
           </div>
       )}
 
       <div className="flex items-end space-x-3">
-        <div className="flex-1 bg-app-light rounded-3xl flex items-center p-1 border-2 border-transparent focus-within:border-primary-green transition-colors">
+        <div className="flex-1 bg-app-light dark:bg-dark-app-light rounded-3xl flex items-center p-1 border-2 border-transparent focus-within:border-primary-green transition-colors">
           {canAttachImage && (
             <>
-                <button onClick={handleImageAttach} className="p-2 text-secondary hover:text-primary-green" disabled={!!imageFile}>
+                <button onClick={handleImageAttach} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary-green" disabled={!!imageFile}>
                     <Icons.PaperClip className="w-6 h-6" />
                 </button>
                 <input 
@@ -205,23 +225,22 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, persona, sug
             value={text}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
+            placeholder={quotedMessage ? "Write your reply..." : "Type a message..."}
             rows={1}
-            className="flex-1 bg-transparent px-3 py-2 resize-none focus:outline-none max-h-40"
+            className="flex-1 bg-transparent px-3 py-2 resize-none focus:outline-none max-h-40 text-primary dark:text-dark-text-primary placeholder:text-secondary dark:placeholder:text-dark-text-secondary"
           />
         </div>
         <button
           onClick={showSendButton ? handleSend : handleMicClick}
           className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ease-in-out"
           style={{ 
-              transform: showSendButton ? 'scale(1)' : 'scale(0.9)', 
-              backgroundColor: showSendButton ? '#004D25' : '#F0F4F2' 
+              backgroundColor: showSendButton ? '#004D25' : (document.documentElement.classList.contains('dark') ? '#1F2937' : '#F0F4F2')
           }}
         >
           {showSendButton ? (
             <Icons.PaperAirplane className="w-6 h-6 text-white" />
           ) : (
-            <Icons.Microphone className={`w-6 h-6 text-secondary transition-colors ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+            <Icons.Microphone className={`w-6 h-6 text-secondary dark:text-dark-text-secondary transition-colors ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
           )}
         </button>
       </div>

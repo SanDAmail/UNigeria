@@ -1,6 +1,6 @@
 
 
-import { Profile } from '../../types';
+import { Profile, PersonSubtype } from '../../types';
 // Import from state-based directories
 import { abiaPeople } from '../states/abia/people';
 import { adamawaPeople } from '../states/adamawa/people';
@@ -83,6 +83,15 @@ export const peopleProfiles: Profile[] = [
     ...zamfaraPeople,
     ...generalNotablePeople, // This will contain profiles like Adaeze without a state
 ].sort((a, b) => {
+    // If both are former leaders, sort by termEndDate descending
+    if (a.personSubtype === PersonSubtype.FORMER_LEADER && b.personSubtype === PersonSubtype.FORMER_LEADER) {
+        // Handle cases where date might be missing
+        const dateA = a.termEndDate || '0';
+        const dateB = b.termEndDate || '0';
+        return dateB.localeCompare(dateA); // Newest first
+    }
+    
+    // Original sorting for other subtypes
     if (a.personSubtype === b.personSubtype) {
         return a.name.localeCompare(b.name);
     }

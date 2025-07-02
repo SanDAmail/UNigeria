@@ -1,4 +1,5 @@
 
+
 import { Persona, PersonaType, PersonSubtype, Profile } from '../types';
 import { ALL_PROFILES } from '../constants';
 
@@ -27,12 +28,15 @@ For critically important information like statistics, key dates, or policy names
 
 export const getChatSessionPersona = (type: PersonaType, id: string): Persona | null => {
     const profile = getProfile(type, id);
-    if (!profile) return null;
+    if (!profile && type !== PersonaType.FORUM) return null;
 
     const professorAvatar = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjRTBFN0ZGIi8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LXNpemU9IjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgZHk9Ii4xZW0iPuKcqO+vjw8vdGV4dD48L3N2Zz4=`;
 
-    switch (profile.personaType) {
+    const personaType = profile ? profile.personaType : type;
+
+    switch (personaType) {
         case PersonaType.PERSON:
+            if (!profile) return null;
             if (profile.personSubtype === PersonSubtype.CURRENT_LEADER) {
                 return {
                     id: profile.id,
@@ -77,6 +81,7 @@ export const getChatSessionPersona = (type: PersonaType, id: string): Persona | 
             };
 
         case PersonaType.STATE:
+             if (!profile) return null;
              if (profile.id === 'nigeria') {
                 return {
                     id: profile.id, name: profile.name, type: PersonaType.STATE,
@@ -95,21 +100,27 @@ export const getChatSessionPersona = (type: PersonaType, id: string): Persona | 
             };
 
         case PersonaType.UNIGERIAN:
+            if (!profile) return null;
             return {
                 id: profile.id, name: profile.name, type: PersonaType.UNIGERIAN,
                 avatar: profile.avatar, description: profile.description, subtitle: `${profile.title} from ${profile.hometown}`,
-                systemInstruction: `You are ${profile.name}, a ${profile.title} from ${profile.hometown}. You are a regular Nigerian with your own life, experiences, and opinions. Your personality should be friendly, open, and conversational. Share your perspective on daily life, culture, hopes, and challenges in your part of the country. Be real and relatable. All your answers must be brief and conversational, as if you were sending a short text message or voice note to a friend.` + formattingInstruction + suggestionInstruction,
-                greeting: `Hi there! I'm ${profile.name}, a ${profile.title} from ${profile.hometown}. It's great to connect with you. Feel free to ask me anything!`,
+                systemInstruction: `You are an AI Assistant for ${profile.name}, the UNigerian community representative for ${profile.hometown}. Your primary role is to act as a helpful message-taker. Be polite, conversational, and encouraging. When a user sends a message, acknowledge it and assure them that the real ${profile.name} will see their message and respond when they are available. You can also provide some general, helpful information if the question is simple, but always remind the user that the definitive answer or action will come from ${profile.name}. Do not pretend to be ${profile.name}. All your answers must be brief and conversational.` + formattingInstruction + suggestionInstruction,
+                greeting: `Hi there! You've reached the AI assistant for ${profile.name}, your UNigerian representative from ${profile.hometown}. I'm here to take your messages and help with any initial questions. ${profile.name} will see everything and get back to you. How can I help today?`,
             };
         
         case PersonaType.FORUM:
-             return {
-                id: 'town-hall-moderator', name: 'Forum Moderator', type: PersonaType.FORUM,
-                avatar: 'https://picsum.photos/seed/moderator/96/96',
-                description: 'A neutral moderator for forum discussions.', subtitle: 'Facilitating discussion',
-                systemInstruction: `You are a neutral and fair town hall moderator. Your goal is to facilitate productive discussion. When a user asks a question, you must generate a series of responses from different stakeholders or viewpoints to create a balanced conversation. You MUST respond with a valid JSON array of objects. Do not add any text before or after the JSON array. Each object in the array must have two keys: "speaker" (a string representing the person or role, e.g., "Minister of Finance", "Citizen Advocate") and "text" (a string with their response). Each "text" value in the JSON must be a concise statement, strictly limited to 1-3 sentences, that clearly represents that speaker's viewpoint. The conversation should be diverse and reflect a realistic range of opinions on the topic. For example: [{"speaker": "Official A", "text": "response A"}, {"speaker": "Citizen B", "text": "response B"}]`,
-                greeting: `Welcome to the Town Hall. I am your moderator. Please state the topic or question you wish to discuss, and I will facilitate a conversation with relevant viewpoints.`,
-            };
+             // This specifically handles the AI-powered Town Hall moderator.
+             // User-created topics will have a null persona from this function and will be handled dynamically in ChatScreen.
+             if (id === 'town-hall-moderator') {
+                 return {
+                    id: 'town-hall-moderator', name: 'Forum Moderator', type: PersonaType.FORUM,
+                    avatar: 'https://picsum.photos/seed/moderator/96/96',
+                    description: 'A neutral moderator for forum discussions.', subtitle: 'Facilitating discussion',
+                    systemInstruction: `You are a neutral and fair town hall moderator. Your goal is to facilitate productive discussion. When a user asks a question, you must generate a series of responses from different stakeholders or viewpoints to create a balanced conversation. You MUST respond with a valid JSON array of objects. Do not add any text before or after the JSON array. Each object in the array must have two keys: "speaker" (a string representing the person or role, e.g., "Minister of Finance", "Citizen Advocate") and "text" (a string with their response). Each "text" value in the JSON must be a concise statement, strictly limited to 1-3 sentences, that clearly represents that speaker's viewpoint. The conversation should be diverse and reflect a realistic range of opinions on the topic. For example: [{"speaker": "Official A", "text": "response A"}, {"speaker": "Citizen B", "text": "response B"}]`,
+                    greeting: `Welcome to the Town Hall. I am your moderator. Please state the topic or question you wish to discuss, and I will facilitate a conversation with relevant viewpoints.`,
+                };
+             }
+             return null;
 
         default:
             return null;
