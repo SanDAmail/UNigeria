@@ -1,0 +1,5 @@
+INSERT INTO public.forum_topics (id, created_at, updated_at, title, author_id, category_id, status, reply_count, location) VALUES
+('c1b2c3d4-e5f6-7890-1234-567890abcdef', NOW(), NOW(), 'Improving sanitation in the main market', 'f8c3c8a0-8e1a-4b5a-9e3c-4c6a7d8b9e0f', 'community-projects', 'New', 0, '{"state": "Lagos", "lga": "Ikeja"}'),
+('d1b2c3d4-e5f6-7890-1234-567890abcdef', NOW(), NOW(), 'Need for more streetlights in our neighborhood', '12345678-90ab-cdef-1234-567890abcdef', 'community-projects', 'Under Review', 5, '{"state": "Anambra", "lga": "Awka South"}'),
+('e1b2c3d4-e5f6-7890-1234-567890abcdef', NOW(), NOW(), 'How can we support local farmers?', '4e7e925e-15e3-458d-8a8c-1c2a33359c3d', 'town-halls', 'Acknowledged', 12, '{"state": "Kaduna", "lga": "Zaria"}'),
+('f1b2c3d4-e5f6-7890-1234-567890abcdef', NOW(), NOW(), 'Creating a tech hub in Enugu', 'a1b2c3d4-e5f6-7890-1234-567890abcdef', 'town-halls', 'Resolved', 23, '{"state": "Enugu", "lga": "Enugu North"}');

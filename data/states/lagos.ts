@@ -1,0 +1,27 @@
+import { Profile, PersonaType } from '../../types';
+
+export const lagosProfile: Profile = { 
+    id: 'lagos', 
+    name: 'Lagos', 
+    personaType: PersonaType.STATE, 
+    avatar: 'https://picsum.photos/seed/lagos/96/96', 
+    slogan: 'Centre of Excellence',
+    demonym: 'Lagosian',
+    region: 'South West',
+    description: 'The bustling economic heart of Nigeria and one of the fastest-growing megacities in the world, known for its vibrant culture, commerce, and dynamism.', 
+    sections: [],
+    capital: 'Ikeja', 
+    dateCreated: '1967-05-27', 
+    governor: 'Babajide Sanwo-Olu', 
+    website: 'lagosstate.gov.ng',
+    majorEthnicGroups: ['Yoruba (predominantly Awori)', 'Significant populations from all Nigerian ethnic groups'],
+    landArea: '3,577 sq km', 
+    gdp: 'Approx. $136 Billion', 
+    literacyRate: '92%',
+    population: 'Approx. 21 million', 
+    lgas: 20, 
+    naturalResources: ['Sand', 'Clay', 'Crude Oil (offshore)'], 
+    majorIndustries: ['Finance & Banking', 'Technology', 'Commerce', 'Entertainment (Nollywood)', 'Manufacturing', 'Shipping and Ports'],
+    notableSites: ['Lekki Conservation Centre', 'National Museum Lagos', 'Nike Art Gallery', 'Freedom Park', 'Tarkwa Bay Beach'],
+    universities: ['University of Lagos (UNILAG)', 'Lagos State University (LASU)', 'Pan-Atlantic University'],
+};

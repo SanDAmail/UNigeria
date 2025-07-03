@@ -1,0 +1,8 @@
+{
+  "name": "UNigeria V2",
+  "description": "A world-class civic engagement platform seamlessly merging an intuitive messenger with a rich national encyclopedia. Start conversations with digital personas of Nigerian leaders, explore states, and engage in civic forums.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}
