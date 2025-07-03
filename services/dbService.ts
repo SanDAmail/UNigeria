@@ -1,6 +1,9 @@
-import { Message, ChatListDetail, Report, TownHallCategory, UserProfile, Endorsement } from '../types';
+
+
+import { Message, ChatListDetail, Report, TownHallCategory, UserProfile, Endorsement, ReportStatus, Notification, Announcement, ReputationEvent } from '../types';
 import { supabase } from './supabaseService';
 import { PERSONA_LIST } from '../constants';
+import { Database } from '../types/database.types';
 
 const DB_NAME = 'UNigeriaDB_Cache';
 const DB_VERSION = 1;
@@ -95,14 +98,14 @@ export const getChatHistory = async (chatId: string): Promise<Message[]> => {
             .select('message_content')
             .eq('user_id', user.id)
             .eq('chat_id', chatId)
-            .order('message_content->>timestamp', { ascending: true });
+            .order('created_at', { ascending: true });
 
-        if (error) {
+        if (error || !data) {
             console.error("Error fetching chat from Supabase, falling back to cache", error);
             return getChatHistoryFromIDB(chatId);
         }
-
-        const messages = data.map(row => row.message_content as Message);
+        
+        const messages = (data as any[]).map(row => row.message_content as unknown as Message);
         await saveChatHistoryToIDB(chatId, messages); // Update cache
         return messages;
     } else {
@@ -110,7 +113,7 @@ export const getChatHistory = async (chatId: string): Promise<Message[]> => {
     }
 }
 
-export const addMessage = async (chatId: string, message: Message): Promise<void> => {
+export const addMessage = async (chatId: string, message: Message, report?: Report): Promise<void> => {
     // 1. Update local cache immediately for UI responsiveness
     const currentHistory = await getChatHistoryFromIDB(chatId);
     const newHistory = [...currentHistory, message];
@@ -125,13 +128,24 @@ export const addMessage = async (chatId: string, message: Message): Promise<void
         const { error } = await supabase.from('chat_messages').insert({
             user_id: user.id,
             chat_id: chatId,
-            message_content: messageToSave
-        });
+            message_content: messageToSave as any
+        } as any);
 
         if (error) {
             console.error("Error saving message to Supabase:", error);
-            // Optionally, implement retry logic or notify user
             throw error;
+        }
+
+        // 3. Create notification if it's a reply in a Town Hall
+        if (report && report.author_id !== user.id && message.type === 'post') {
+            await createNotification({
+                user_id: report.author_id,
+                type: 'new_reply',
+                title: `New reply in "${report.title}"`,
+                body: `${message.authorInfo?.name || 'Someone'} replied to your report.`,
+                link: `/townhall/report/${report.id}`,
+                author_avatar: message.authorInfo?.avatar,
+            });
         }
     }
 };
@@ -156,7 +170,7 @@ export const updateMessageContent = async (messageId: string, chatId: string, ne
 
     // 2. Modify the message content
     const updatedContent: Message = {
-        ...messageData.message_content,
+        ...((messageData as any).message_content as unknown as Message),
         text: newText,
         updated_at: Date.now() // Add updated timestamp
     };
@@ -164,7 +178,7 @@ export const updateMessageContent = async (messageId: string, chatId: string, ne
     // 3. Update the row in the database
     const { error: updateError } = await supabase
         .from('chat_messages')
-        .update({ message_content: updatedContent })
+        .update({ message_content: updatedContent } as any)
         .eq('chat_id', chatId)
         .eq('user_id', user.id)
         .eq('message_content->>id', messageId);
@@ -189,11 +203,12 @@ export const toggleLikePost = async (messageId: string, chatId: string, userId: 
         throw new Error("Could not find the message to like.");
     }
 
-    const currentMessage: Message = messageData.message_content;
+    const currentMessage: Message = (messageData as any).message_content as unknown as Message;
     const currentLikes: string[] = currentMessage.likes || [];
     
     let newLikes: string[];
     const userIndex = currentLikes.indexOf(userId);
+    let isLiking = false;
 
     if (userIndex > -1) {
         // User has already liked, so unlike
@@ -201,6 +216,7 @@ export const toggleLikePost = async (messageId: string, chatId: string, userId: 
     } else {
         // User has not liked, so like
         newLikes = [...currentLikes, userId];
+        isLiking = true;
     }
 
     const updatedMessageContent: Message = {
@@ -211,8 +227,8 @@ export const toggleLikePost = async (messageId: string, chatId: string, userId: 
     // 3. Update the row
     const { data: updatedData, error: updateError } = await supabase
         .from('chat_messages')
-        .update({ message_content: updatedMessageContent })
-        .eq('id', messageData.id) // Use the primary key for the update
+        .update({ message_content: updatedMessageContent } as any)
+        .eq('id', (messageData as any).id) // Use the primary key for the update
         .select('message_content')
         .single();
     
@@ -221,7 +237,12 @@ export const toggleLikePost = async (messageId: string, chatId: string, userId: 
         throw new Error("Could not update like status.");
     }
     
-    return updatedData.message_content as Message;
+    // 4. Update reputation if liking a post
+    if (isLiking && currentMessage.sender !== 'ai' && typeof currentMessage.sender === 'string' && currentMessage.sender !== userId) {
+        await updateReputation(currentMessage.sender, 'like_post_received', 2, messageId, currentMessage.text.substring(0, 50));
+    }
+    
+    return (updatedData as any).message_content as unknown as Message;
 }
 
 export const clearChatHistory = async (chatId: string): Promise<void> => {
@@ -248,12 +269,12 @@ export const getChatListDetails = async (): Promise<{ [key: string]: ChatListDet
         // Fetch from Supabase
         const { data, error } = await supabase.rpc('get_latest_messages_for_user');
 
-        if (error) {
+        if (error || !data) {
             console.error("Error fetching chat list details from Supabase RPC, will use local.", error);
-        } else if (data) {
+        } else {
             const details: { [chatId: string]: ChatListDetail } = {};
-            for (const row of data) {
-                const message = row.message_content as Message;
+            for (const row of (data as any[])) {
+                const message = row.message_content as unknown as Message;
                 const lastMessageText = message.error ? '[Error]' : message.type === 'image' ? `[Image] ${message.text}`.trim() : message.text;
                 details[row.chat_id] = {
                     lastMessage: lastMessageText,
@@ -285,17 +306,30 @@ export const getChatListDetails = async (): Promise<{ [key: string]: ChatListDet
 // --- User Profile Functions ---
 
 export const getUserProfileById = async (userId: string): Promise<UserProfile | null> => {
-    const { data, error } = await supabase
+    const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, title, avatar, state, lga, ward, is_candidate, is_representative, tenure_end_date')
+        .select('*')
         .eq('id', userId)
         .single();
     
-    if (error) {
-        console.error("Error fetching user profile:", error);
+    if (profileError || !profileData) {
+        console.error("Error fetching user profile:", profileError?.message);
         return null;
     }
-    return data;
+
+    const { count, error: countError } = await supabase
+        .from('endorsements')
+        .select('*', { count: 'exact', head: true })
+        .eq('candidate_id', userId);
+
+    if(countError) {
+        console.warn("Could not fetch endorsement count", countError.message);
+    }
+
+    const endorsement_count = countError ? 0 : count || 0;
+    const userProfile: UserProfile = { ...(profileData as any), manifesto: (profileData as any).manifesto as any, endorsement_count };
+
+    return userProfile;
 }
 
 export const uploadUserAvatar = async (userId: string, file: File): Promise<string> => {
@@ -328,14 +362,16 @@ export const uploadUserAvatar = async (userId: string, file: File): Promise<stri
 
 export const getTownHallCategories = async (): Promise<TownHallCategory[]> => {
     const { data, error } = await supabase.from('forum_categories').select('*');
-    if (error) {
+    if (error || !data) {
         console.error('Error fetching town hall categories:', error);
         return [];
     }
-    return data as TownHallCategory[];
+    return data as any;
 };
 
-export const getReports = async (filters: { state?: string, lga?: string } = {}): Promise<Report[]> => {
+export const getReports = async (filters: { state?: string, lga?: string, author_id?: string } = {}): Promise<Report[]> => {
+    type ReportWithAuthor = Database['public']['Tables']['forum_topics']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
+
     let query = supabase
         .from('forum_topics')
         .select(`
@@ -353,22 +389,32 @@ export const getReports = async (filters: { state?: string, lga?: string } = {})
     if (filters.lga) {
         query = query.eq('location->>lga', filters.lga);
     }
+     if (filters.author_id) {
+        query = query.eq('author_id', filters.author_id);
+    }
+
 
     const { data, error } = await query;
 
-    if (error) {
+    if (error || !data) {
         console.error('Error fetching reports:', error);
         return [];
     }
 
-    return data.map((d: any) => ({
+    return ((data as any[]) as ReportWithAuthor[]).map((d) => ({
         ...d,
+        location: d.location as any,
+        author: {
+            name: d.author?.name || 'Unknown User',
+            avatar: d.author?.avatar || ''
+        },
         lastReply: `by ${d.author?.name || '...'}`,
     }));
 };
 
 export const searchReports = async (query: string): Promise<Report[]> => {
     if (!query) return [];
+    type ReportWithAuthor = Database['public']['Tables']['forum_topics']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
 
     const { data, error } = await supabase
         .from('forum_topics')
@@ -382,21 +428,28 @@ export const searchReports = async (query: string): Promise<Report[]> => {
         .ilike('title', `%${query}%`)
         .order('created_at', { ascending: false });
 
-    if (error) {
+    if (error || !data) {
         console.error('Error searching reports:', error);
         return [];
     }
 
-    return data.map((d: any) => ({
+    return ((data as any[]) as ReportWithAuthor[]).map((d) => ({
         ...d,
+        location: d.location as any,
+        author: {
+            name: d.author?.name || 'Unknown User',
+            avatar: d.author?.avatar || ''
+        },
         lastReply: `by ${d.author?.name || '...'}`,
     }));
 };
 
 export const createReport = async (title: string, category_id: string, author_id: string, location: { state: string, lga: string, ward: string }): Promise<Report | null> => {
+    type ReportWithAuthor = Database['public']['Tables']['forum_topics']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
+
     const { data, error } = await supabase
         .from('forum_topics')
-        .insert({ title, category_id, author_id, location })
+        .insert({ title, category_id, author_id, location, status: 'New', updated_at: new Date().toISOString() } as any)
         .select(`
             *,
             author:profiles (
@@ -406,12 +459,79 @@ export const createReport = async (title: string, category_id: string, author_id
         `)
         .single();
     
-    if (error) {
+    if (error || !data) {
         console.error('Error creating report:', error);
         return null;
     }
-    return { ...data, lastReply: `by ${data.author.name}` };
+    
+    const typedData = data as unknown as ReportWithAuthor;
+    await updateReputation(author_id, 'create_report', 10, typedData.id, title);
+    
+    return { 
+        ...typedData, 
+        location: typedData.location as any,
+        author: { 
+            name: typedData.author?.name || 'Unknown', 
+            avatar: typedData.author?.avatar || ''
+        },
+        lastReply: `by ${typedData.author?.name || '...'}` 
+    };
 };
+
+export const updateReportStatus = async (reportId: string, status: ReportStatus, authorId: string): Promise<Report | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated.");
+
+    type ReportWithAuthor = Database['public']['Tables']['forum_topics']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
+
+    const { data, error } = await supabase
+        .from('forum_topics')
+        .update({ status: status, updated_at: new Date().toISOString() } as any)
+        .eq('id', reportId)
+        .select(`
+            *,
+            author:profiles (
+                name,
+                avatar
+            )
+        `)
+        .single();
+    
+    if (error || !data) {
+        console.error('Error updating report status:', error);
+        throw error || new Error('Report not found');
+    }
+
+    const typedData = data as unknown as ReportWithAuthor;
+
+    // Create notification for the report author
+    if (authorId !== user.id) {
+        await createNotification({
+            user_id: authorId,
+            type: 'status_change',
+            title: `Report status changed to "${status}"`,
+            body: `Your report "${typedData.title}" was updated by a representative.`,
+            link: `/townhall/report/${typedData.id}`,
+            author_avatar: user.user_metadata.avatar_url,
+        });
+    }
+
+    // Award reputation points if resolved
+    if (status === 'Resolved') {
+        await updateReputation(authorId, 'report_resolved', 25, reportId, typedData.title);
+    }
+    
+    return { 
+        ...typedData, 
+        location: typedData.location as any,
+        author: {
+            name: typedData.author?.name || 'Unknown',
+            avatar: typedData.author?.avatar || ''
+        },
+        lastReply: `by ${typedData.author?.name || '...'}` 
+    };
+}
+
 
 export const deleteReport = async (reportId: string): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -461,43 +581,53 @@ export const getRepresentatives = async (location: { state?: string, lga?: strin
     if (location.lga) query = query.eq('lga', location.lga);
     
     const { data, error } = await query.order('name');
-    if (error) {
+    if (error || !data) {
         console.error("Error fetching representatives:", error);
         return [];
     }
-    return data as UserProfile[];
+    return (data as any[]).map(d => ({...d, manifesto: d.manifesto as any}));
 }
 
 export const getCandidates = async (location: { state?: string, lga?: string }): Promise<UserProfile[]> => {
-    let query = supabase.from('profiles').select('*, endorsements(count)').eq('is_candidate', true);
+    let query = supabase.from('profiles').select('*').eq('is_candidate', true);
     if (location.state) query = query.eq('state', location.state);
     if (location.lga) query = query.eq('lga', location.lga);
 
     const { data, error } = await query.order('name');
-    if (error) {
+    if (error || !data) {
         console.error("Error fetching candidates:", error);
         return [];
     }
     
-    return data.map((d: any) => ({
-        ...d,
-        endorsement_count: d.endorsements[0]?.count || 0
+    const candidatesWithEndorsements = await Promise.all((data as any[]).map(async (candidate) => {
+        const { count, error: countError } = await supabase
+            .from('endorsements')
+            .select('*', { count: 'exact', head: true })
+            .eq('candidate_id', candidate.id);
+        return {
+            ...candidate,
+            manifesto: candidate.manifesto as any,
+            endorsement_count: countError ? 0 : count || 0,
+        };
     }));
+
+    return candidatesWithEndorsements;
 }
 
 
 export const declareCandidacy = async (userId: string): Promise<void> => {
-    const { error } = await supabase.from('profiles').update({ is_candidate: true }).eq('id', userId);
+    const { error } = await supabase.from('profiles').update({ is_candidate: true } as any).eq('id', userId);
     if (error) throw error;
 }
 
-export const addEndorsement = async (candidateId: string, endorserId: string): Promise<{ success: boolean, message: string }> => {
-    // Simplified election cycle for now
+export const addEndorsement = async (candidateId: string, endorser: UserProfile): Promise<{ success: boolean, message: string }> => {
+    if (!endorser.id) {
+        return { success: false, message: "Endorser profile is not valid." };
+    }
     const election_cycle = `${new Date().getFullYear()}-${new Date().getFullYear() + 2}`;
     
-    // Check if user has already endorsed someone in their LGA for this cycle
     const { data: existingEndorsement, error: checkError } = await supabase.rpc('has_endorsed_in_lga_cycle', {
-        p_endorser_id: endorserId,
+        p_endorser_id: endorser.id,
         p_election_cycle: election_cycle
     });
 
@@ -512,26 +642,41 @@ export const addEndorsement = async (candidateId: string, endorserId: string): P
 
     const { error } = await supabase.from('endorsements').insert({
         candidate_id: candidateId,
-        endorser_id: endorserId,
+        endorser_id: endorser.id,
         election_cycle: election_cycle,
-        weight: 1.0 // Weighting logic to be implemented later
-    });
+        weight: 1.0
+    } as any);
 
     if (error) {
         console.error("Error adding endorsement:", error);
         return { success: false, message: "Failed to add endorsement." };
     }
+
+    // Award reputation points
+    await updateReputation(endorser.id, 'endorse_candidate', 5, candidateId, `Endorsed ${candidateId}`);
+    await updateReputation(candidateId, 'receive_endorsement', 15, endorser.id, `Endorsed by ${endorser.name}`);
+
+
+    // Create notification for the candidate
+    await createNotification({
+        user_id: candidateId,
+        type: 'new_endorsement',
+        title: "You received a new endorsement!",
+        body: `${endorser.name} has endorsed your candidacy.`,
+        link: `/profile/${endorser.id}`,
+        author_avatar: endorser.avatar,
+    });
     
     return { success: true, message: "Endorsement successful!" };
 }
 
 export const getEndorsementsForUser = async (userId: string): Promise<Endorsement[]> => {
     const { data, error } = await supabase.from('endorsements').select('*').eq('endorser_id', userId);
-    if (error) {
+    if (error || !data) {
         console.error("Error fetching user endorsements:", error);
         return [];
     }
-    return data;
+    return data as any;
 }
 
 export const getEndorsementCount = async (candidateId: string): Promise<number> => {
@@ -541,4 +686,151 @@ export const getEndorsementCount = async (candidateId: string): Promise<number> 
         return 0;
     }
     return count || 0;
+};
+
+
+// --- Notification and Announcement Functions ---
+export const createNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'is_read'>): Promise<void> => {
+    const { error } = await supabase.from('notifications').insert({ ...notification, is_read: false } as any);
+    if (error) {
+        console.error('Error creating notification:', error);
+    }
+};
+
+export const getNotifications = async (userId: string): Promise<Notification[]> => {
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+    if (error || !data) {
+        console.error('Error fetching notifications:', error);
+        return [];
+    }
+    return data as any;
+};
+
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+    const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+    
+    if (error) {
+        console.error('Error fetching unread notification count:', error);
+        return 0;
+    }
+    return count || 0;
+};
+
+export const markNotificationsAsRead = async (userId: string, notificationIds: string[]): Promise<void> => {
+    const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true } as any)
+        .eq('user_id', userId)
+        .in('id', notificationIds);
+    if (error) {
+        console.error('Error marking notifications as read:', error);
+    }
+};
+
+export const createAnnouncement = async (authorId: string, title: string, content: string, lga: string, state: string): Promise<Announcement | null> => {
+    type AnnouncementWithAuthor = Database['public']['Tables']['announcements']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
+
+    const { data, error } = await supabase
+        .from('announcements')
+        .insert({ author_id: authorId, title, content, lga, state } as any)
+        .select(`*, author:profiles(name, avatar)`)
+        .single();
+    if (error || !data) {
+        console.error('Error creating announcement:', error);
+        return null;
+    }
+    const typedData = data as unknown as AnnouncementWithAuthor;
+    
+    return {
+        ...typedData, 
+        author: { 
+            name: typedData.author?.name || 'Unknown', 
+            avatar: typedData.author?.avatar || ''
+        }
+    };
+};
+
+export const getAnnouncements = async (filters: { state?: string, lga?: string }): Promise<Announcement[]> => {
+    type AnnouncementWithAuthor = Database['public']['Tables']['announcements']['Row'] & { author: Pick<UserProfile, 'name' | 'avatar'> | null };
+
+    let query = supabase.from('announcements').select(`*, author:profiles(name, avatar)`).order('created_at', { ascending: false });
+
+    if (filters.state) {
+        query = query.eq('state', filters.state);
+    }
+    if (filters.lga) {
+        query = query.eq('lga', filters.lga);
+    }
+
+    const { data, error } = await query.limit(50);
+    if (error || !data) {
+        console.error('Error fetching announcements:', error);
+        return [];
+    }
+
+    return ((data as any[]) as AnnouncementWithAuthor[]).map(d => ({
+        ...d,
+        author: {
+            name: d.author?.name || 'Unknown',
+            avatar: d.author?.avatar || ''
+        }
+    }));
+};
+
+// --- Reputation and Leaderboard Functions ---
+
+export const updateReputation = async (userId: string, eventType: ReputationEvent['type'], points: number, relatedId?: string, relatedText?: string): Promise<void> => {
+    const { error } = await supabase.rpc('update_reputation', {
+        user_id_arg: userId,
+        event_type_arg: eventType,
+        points_arg: points,
+        related_id_arg: relatedId,
+        related_text_arg: relatedText,
+    });
+    if (error) {
+        console.error(`Error updating reputation for event ${eventType}:`, error);
+    }
+};
+
+export const getLeaderboard = async (filters: { state?: string, lga?: string } = {}): Promise<UserProfile[]> => {
+    const { data, error } = await supabase.rpc('get_leaderboard', {
+        state_filter: filters.state || null,
+        lga_filter: filters.lga || null,
+    });
+    
+    if (error || !data) {
+        console.error('Error fetching leaderboard:', error);
+        return [];
+    }
+    // The RPC returns a specific shape, we map it to our richer UserProfile type
+    return ((data as any[]) || []).map(item => ({
+        ...item,
+        is_candidate: false, // RPC doesn't return these, so default them
+        is_representative: false,
+    }));
+};
+
+
+export const getReputationEvents = async (userId: string): Promise<ReputationEvent[]> => {
+    const { data, error } = await supabase
+        .from('reputation_events')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (error || !data) {
+        console.error('Error fetching reputation events:', error);
+        return [];
+    }
+    return data as any;
 };

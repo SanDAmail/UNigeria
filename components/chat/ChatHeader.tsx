@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Persona, PersonaType } from '../../types';
+import { Persona, PersonaType, Report } from '../../types';
 import { Icons } from '../../constants';
 import { useAppDispatch, useAppState } from '../../context/AppContext';
+import StatusBadge from '../forums/StatusBadge';
+import StatusUpdater from '../forums/StatusUpdater';
 
 interface ChatHeaderProps {
   persona: Persona;
@@ -11,6 +13,8 @@ interface ChatHeaderProps {
   searchResultsCount: number;
   currentResultIndex: number;
   setCurrentResultIndex: (index: number) => void;
+  onSummarize: () => void;
+  isSummarizing: boolean;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
@@ -21,10 +25,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
     searchResultsCount,
     currentResultIndex,
     setCurrentResultIndex,
+    onSummarize,
+    isSummarizing,
 }) => {
   const dispatch = useAppDispatch();
+  const { userProfile, reports } = useAppState();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
+
+  const report = persona.type === PersonaType.TOWNHALL ? reports.find(r => r.id === persona.id) : null;
+  const canUpdateStatus = userProfile.is_representative || (report && report.author_id === userProfile.id);
 
   useEffect(() => {
       if (!isSearchActive) {
@@ -106,12 +116,30 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           <img src={persona.avatar} alt={persona.name} className="w-10 h-10 rounded-full" />
           <div>
-            <p className="font-semibold text-primary dark:text-dark-text-primary">{persona.name}</p>
+            <div className="flex items-center space-x-2">
+                <p className="font-semibold text-primary dark:text-dark-text-primary">{persona.name}</p>
+                {report && <StatusBadge status={report.status} />}
+            </div>
             <p className="text-xs text-secondary dark:text-dark-text-secondary">{persona.subtitle}</p>
           </div>
         </div>
       </div>
       <div className="flex items-center space-x-1">
+        {report && canUpdateStatus && <StatusUpdater report={report} />}
+        {persona.type === PersonaType.TOWNHALL && (
+          <button 
+            onClick={onSummarize} 
+            disabled={isSummarizing}
+            className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary disabled:opacity-50 disabled:cursor-wait" 
+            aria-label="Summarize discussion"
+          >
+            {isSummarizing ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-green"></div>
+            ) : (
+              <Icons.Sparkles className="w-6 h-6" />
+            )}
+          </button>
+        )}
         <button onClick={handleShowProfile} className="p-2 text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary lg:hidden" aria-label="Show profile information">
             <Icons.InformationCircle className="w-6 h-6" />
         </button>

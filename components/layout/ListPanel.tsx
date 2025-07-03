@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState, useAppDispatch, ListPanelTab, NigeriaSubTab } from '../../context/AppContext';
 import { Icons, PERSONA_LIST, ALL_PROFILES } from '../../constants';
-import { PersonSubtype, Persona, PersonaType, Report, TownHallSubTab, Profile, Message } from '../../types';
+import { PersonSubtype, Persona, PersonaType, Report, TownHallSubTab, Profile, Message, UserProfile, Announcement, UnigerianSubTab } from '../../types';
 import ChatListItem from '../list/ChatListItem';
 import ForumCategoryCard from '../list/ForumCategoryCard';
 import ReportListItem from '../list/TopicListItem';
@@ -12,36 +12,39 @@ import NigeriaSubNav from './NigeriaSubNav';
 import StateComparisonSelector from '../list/StateComparisonSelector';
 import { supabase } from '../../services/supabaseService';
 import GlobalSearchResults from '../list/GlobalSearchResults';
+import CandidateListItem from '../townhalls/CandidateListItem';
+import LGAInsightsView from '../townhalls/LGAInsightsView';
+import UnigerianSubNav from '../unigerians/UnigerianSubNav';
+import AnnouncementListItem from '../unigerians/AnnouncementListItem';
+import LeaderboardView from '../leaderboard/LeaderboardView';
+
+interface ListPanelProps {
+    onStartCreateAnnouncement: () => void;
+}
 
 const DesktopNav: React.FC = () => {
-    const { activeTab, isQuietSpaceActive } = useAppState();
+    const { activeTab } = useAppState();
     const dispatch = useAppDispatch();
     
     const tabs = [
         { id: ListPanelTab.CHATS, label: "Chats", icon: Icons.ChatBubbleOvalLeftEllipsis },
         { id: ListPanelTab.NIGERIA, label: "Nigeria", icon: Icons.Map },
         { id: ListPanelTab.PEOPLE_CURRENT, label: "People", icon: Icons.UserGroup },
-        { id: ListPanelTab.UNIGERIANS, label: "UNigerians", icon: Icons.User },
         { id: ListPanelTab.TOWN_HALLS, label: "Town Halls", icon: Icons.Landmark },
-        { id: ListPanelTab.QUIET, label: "Quiet", icon: Icons.Moon },
+        { id: ListPanelTab.LEADERBOARD, label: "Leaders", icon: Icons.Award },
     ];
 
     const isPeopleTabActive = activeTab.startsWith('people_');
 
     const handleNavClick = (tabId: ListPanelTab) => {
-        if (tabId === ListPanelTab.QUIET) {
-            dispatch({ type: 'TOGGLE_QUIET_SPACE' });
-        } else {
-            dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
-        }
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
     };
 
     return (
         <div className="hidden lg:flex items-center justify-around border-b border-ui-border dark:border-dark-ui-border p-1">
            {tabs.map(tab => {
                 let isActive = isPeopleTabActive && tab.id === ListPanelTab.PEOPLE_CURRENT ? true : activeTab === tab.id;
-                if(tab.id === ListPanelTab.QUIET) isActive = isQuietSpaceActive;
-
+               
                 return (
                     <button 
                         key={tab.id}
@@ -74,8 +77,23 @@ const formatTimestamp = (timestamp: number): string => {
     return date.toLocaleDateString('en-GB');
 };
 
-const ListPanel: React.FC = () => {
-    const { activeTab, activeChatId, chatListDetails, townHallSubTab, reports, userProfile, townHallCategories, nigeriaSubTab, isAuthenticated, unreadCounts } = useAppState();
+const ListPanel: React.FC<ListPanelProps> = ({ onStartCreateAnnouncement }) => {
+    const { 
+        activeTab, 
+        activeChatId, 
+        chatListDetails, 
+        townHallSubTab, 
+        reports, 
+        candidates, 
+        userProfile, 
+        townHallCategories, 
+        nigeriaSubTab, 
+        isAuthenticated, 
+        unreadCounts,
+        unigerianSubTab,
+        representatives,
+        announcements
+    } = useAppState();
     const dispatch = useAppDispatch();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -177,6 +195,10 @@ const ListPanel: React.FC = () => {
         setTimeout(() => {
             dispatch({ type: 'SET_ACTIVE_REPORT', payload: report.id });
         }, 0);
+    };
+    
+    const handleCandidateClick = (candidate: UserProfile) => {
+        dispatch({ type: 'SHOW_SIDEBAR_PROFILE', payload: candidate.id });
     };
 
     const handleDeleteReport = async (reportId: string) => {
@@ -356,36 +378,34 @@ const ListPanel: React.FC = () => {
                  listItems = ALL_PROFILES.filter(p => p.personaType === PersonaType.PERSON && p.personSubtype === PersonSubtype.NOTABLE_PERSON);
                  break;
             case ListPanelTab.UNIGERIANS:
-                 const unigerianProfiles = ALL_PROFILES.filter(p => p.personaType === PersonaType.UNIGERIAN);
-                 return (
-                    <div>
-                        <div className="p-4 bg-app-light dark:bg-dark-app-light border-b border-ui-border dark:border-dark-ui-border">
-                            <h3 className="font-semibold text-primary dark:text-dark-text-primary">Become a Representative</h3>
-                            <p className="text-sm text-secondary dark:text-dark-text-secondary mt-1">
-                                Represent your community and become a verified UNigerian. Help give your community a voice on our platform.
-                            </p>
-                            <a href="mailto:apply@unigeria.dev" className="mt-3 inline-block bg-primary-green text-white text-sm font-semibold py-2 px-4 rounded-lg hover:bg-opacity-90 transition-all">
-                                Apply Now
-                            </a>
-                        </div>
-                        {unigerianProfiles.map(p => (
-                             <ChatListItem 
-                                key={`${p.personaType}_${p.id}`}
+                 switch(unigerianSubTab) {
+                    case UnigerianSubTab.REPS:
+                        return representatives.map(p => (
+                            <ChatListItem 
+                                key={`${PersonaType.UNIGERIAN}_${p.id}`}
                                 data={{ 
-                                    id: p.id, 
-                                    type: p.personaType, 
+                                    id: p.id!, 
+                                    type: PersonaType.UNIGERIAN, 
                                     avatar: p.avatar, 
                                     name: p.name, 
-                                    lastMessage: p.title || p.description, 
+                                    lastMessage: `${p.lga}, ${p.state}`,
                                     timestamp: '', 
-                                    unreadCount: unreadCounts[`${p.personaType}_${p.id}`] || 0 
+                                    unreadCount: 0,
                                 }}
-                                isActive={activeChatId === `${p.personaType}_${p.id}`}
-                                onClick={() => handleItemClick(p.personaType, p.id)}
+                                isActive={activeChatId === `${PersonaType.UNIGERIAN}_${p.id}`}
+                                onClick={() => handleItemClick(PersonaType.UNIGERIAN, p.id!)}
                             />
-                        ))}
-                    </div>
-                 )
+                        ));
+                    case UnigerianSubTab.ANNOUNCEMENTS:
+                        return announcements.length > 0 ? (
+                            announcements.map((announcement: Announcement) => (
+                                <AnnouncementListItem key={announcement.id} announcement={announcement} />
+                            ))
+                        ) : (
+                            <div className="text-center text-secondary dark:text-dark-text-secondary p-8">No announcements found for the selected area.</div>
+                        );
+                 }
+                 return null;
             case ListPanelTab.TOWN_HALLS:
                 if (!isAuthenticated) {
                     return <div className="text-center text-secondary dark:text-dark-text-secondary p-8">Please sign in to access the Town Halls.</div>;
@@ -439,8 +459,24 @@ const ListPanel: React.FC = () => {
                                 />
                             );
                         });
+                    case TownHallSubTab.CANDIDATES:
+                        if (candidates.length === 0) return <div className="text-center text-secondary dark:text-dark-text-secondary p-4">No candidates found for the selected location.</div>;
+                        return candidates.map(candidate => (
+                            <CandidateListItem
+                                key={candidate.id}
+                                candidate={candidate}
+                                onClick={() => handleCandidateClick(candidate)}
+                            />
+                        ));
+                    case TownHallSubTab.LGA_INSIGHTS:
+                        return <LGAInsightsView />;
                 }
                 break;
+            case ListPanelTab.LEADERBOARD:
+                if (!isAuthenticated) {
+                    return <div className="text-center text-secondary dark:text-dark-text-secondary p-8">Please sign in to view the Leaderboard.</div>;
+                }
+                return <LeaderboardView />;
             default:
                 return null;
         }
@@ -474,6 +510,8 @@ const ListPanel: React.FC = () => {
                  {isPeopleTab && <PeopleSubNav activeTab={activeTab} />}
                  {activeTab === ListPanelTab.TOWN_HALLS && <TownHallSubNav />}
                  {activeTab === ListPanelTab.NIGERIA && <NigeriaSubNav />}
+                 {activeTab === ListPanelTab.UNIGERIANS && <UnigerianSubNav onStartCreateAnnouncement={onStartCreateAnnouncement} />}
+
                 <div className="relative">
                     <Icons.MagnifyingGlass className="w-5 h-5 text-secondary dark:text-dark-text-secondary absolute top-1/2 left-3 -translate-y-1/2" />
                     <input 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Report } from '../../types';
 import { Icons } from '../../constants';
+import StatusBadge from '../forums/StatusBadge';
 
 interface ReportListItemProps {
   report: Report;
@@ -24,7 +25,10 @@ const ReportListItem: React.FC<ReportListItemProps> = ({ report, onClick, isAuth
     >
       <img src={report.author?.avatar} alt={report.author?.name} className="w-10 h-10 rounded-full flex-shrink-0 mt-1" />
       <div className="flex-1 min-w-0">
-        <h2 className="text-md font-semibold text-primary dark:text-dark-text-primary truncate group-hover:text-primary-green">{report.title}</h2>
+        <div className="flex items-center space-x-2">
+            <h2 className="text-md font-semibold text-primary dark:text-dark-text-primary truncate group-hover:text-primary-green">{report.title}</h2>
+            <StatusBadge status={report.status} />
+        </div>
         <div className="text-sm text-secondary dark:text-dark-text-secondary flex items-center flex-wrap">
           <span>
             By <span className="font-medium text-primary-green">{report.author?.name || '...'}</span>

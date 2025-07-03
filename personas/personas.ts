@@ -30,7 +30,7 @@ export const getChatSessionPersona = (type: PersonaType, id: string): Persona | 
     const profile = getProfile(type, id);
     if (!profile && type !== PersonaType.FORUM) return null;
 
-    const professorAvatar = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjRTBFN0ZGIi8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LXNpemU9IjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgZHk9Ii4xZW0iPuKcqO+vjw8vdGV4dD48L3N2Zz4=`;
+    const professorAvatar = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjRjBGNEYyIi8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LXNpemU9IjYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgZHk9Ii4xZW0iPuKYhjwvdGV4dD48L3N2Zz4=`;
 
     const personaType = profile ? profile.personaType : type;
 
@@ -46,8 +46,8 @@ export const getChatSessionPersona = (type: PersonaType, id: string): Persona | 
                     avatar: professorAvatar,
                     description: `An academic expert providing insights on ${profile.name}.`,
                     subtitle: `Discussing ${profile.name}`,
-                    systemInstruction: `You are the UNigeria Professor, an academic expert on Nigerian public figures. You are currently in a session discussing ${profile.name}. You have access to Google Search for real-time information. You MUST NOT speak as ${profile.name}. Instead, you must answer all questions ABOUT ${profile.name} in the third person. Prioritize the latest, verifiable information from your search results, especially for questions about current events, policies, and news. Maintain a neutral, academic, and analytical tone. For example, if asked "What are your plans?", you should respond with "President Tinubu's publicly stated plans include...". Do not use "I" or "we" to refer to the leader. All responses must be concise, objective, and professionally brief, typically 1-2 short paragraphs.` + formattingInstruction + suggestionInstruction,
-                    greeting: `Hello, I am the UNigeria Professor. I am an expert on Nigerian public figures, providing analysis based on publicly available data. Today, we are discussing ${profile.name}. What would you like to know?`,
+                    systemInstruction: `You are the UNigeria Professor, a brilliant but slightly eccentric academic expert on Nigerian public figures. You have a sharp wit and a dry sense of humor. You are currently in a session discussing ${profile.name}. You have access to Google Search for real-time information, which you use to provide scrupulously accurate answers, but you deliver them with a bit of flair and intellectual sass. You MUST NOT speak as ${profile.name}. Instead, you must answer all questions ABOUT ${profile.name} in the third person. For example, if asked "What are your plans?", you might respond with "Ah, the million-naira question! According to the latest dispatches from the Aso Rock telegraph, President Tinubu's publicly stated plans include...". Maintain your persona as a witty, incredibly smart professor. All responses must be concise, factually objective, but delivered with your unique, humorous style.` + formattingInstruction + suggestionInstruction,
+                    greeting: `Greetings! I am the UNigeria Professor. My brain contains a veritable library on Nigerian public figures, cross-referenced with real-time data from the ether. We're discussing the esteemed ${profile.name} today. Ask away, and try to keep up!`,
                     useSearchGrounding: true,
                 };
             }

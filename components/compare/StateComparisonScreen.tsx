@@ -1,11 +1,13 @@
 
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
 import { ALL_PROFILES, Icons } from '../../constants';
 import { Profile, PersonaType } from '../../types';
 import { parseNumericValue } from '../../utils/parsing';
 import ComparisonBarChart from './ComparisonBarChart';
+import { generateStateComparison } from '../../services/geminiService';
+import SummaryBubble from '../common/SummaryBubble';
 
 const ComparisonRow: React.FC<{
     label: string;
@@ -26,6 +28,10 @@ const ComparisonRow: React.FC<{
 const StateComparisonScreen: React.FC = () => {
     const { stateComparisonIds } = useAppState();
     const dispatch = useAppDispatch();
+
+    const [summary, setSummary] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     
     if (!stateComparisonIds.state1 || !stateComparisonIds.state2) {
         return null;
@@ -37,6 +43,23 @@ const StateComparisonScreen: React.FC = () => {
 
     const state1 = ALL_PROFILES.find(p => p.id === stateComparisonIds.state1 && p.personaType === PersonaType.STATE) as Profile | undefined;
     const state2 = ALL_PROFILES.find(p => p.id === stateComparisonIds.state2 && p.personaType === PersonaType.STATE) as Profile | undefined;
+
+    const handleGenerateSummary = useCallback(async () => {
+        if (!state1 || !state2 || isGenerating) return;
+        
+        setIsGenerating(true);
+        setError(null);
+        setSummary(null);
+
+        try {
+            const result = await generateStateComparison(state1, state2);
+            setSummary(result);
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setIsGenerating(false);
+        }
+    }, [state1, state2, isGenerating]);
     
     if (!state1 || !state2) {
         return (
@@ -86,6 +109,30 @@ const StateComparisonScreen: React.FC = () => {
                         <h2 className="text-lg font-bold text-primary dark:text-dark-text-primary break-words">{state2.name}</h2>
                         <p className="text-xs text-secondary dark:text-dark-text-secondary italic">"{state2.slogan}"</p>
                     </div>
+                </div>
+
+                <div className="mb-6 space-y-2">
+                    {summary && <SummaryBubble summaryText={summary} onDismiss={() => setSummary(null)} />}
+                    {error && <div className="p-3 text-center text-sm bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-lg">{error}</div>}
+                    {!summary && (
+                         <button
+                            onClick={handleGenerateSummary}
+                            disabled={isGenerating}
+                            className="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-primary-green/50 text-primary-green font-semibold rounded-lg hover:bg-primary-green/10 focus:outline-none transition-colors disabled:opacity-50"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-green mr-2"></div>
+                                    <span>Generating Analysis...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Icons.Sparkles className="w-5 h-5 mr-2" />
+                                    Generate AI Comparison
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 <div className="bg-app-light dark:bg-dark-app-light rounded-lg p-4 text-sm">

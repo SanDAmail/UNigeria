@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
-import { Icons, NIGERIAN_STATES, LGAS } from '../../constants';
+import { Icons } from '../../constants';
+import { NIGERIAN_LOCATIONS } from '../../data/locations';
 import { supabase } from '../../services/supabaseService';
 
 type AuthMode = 'login' | 'register' | 'forgot_password';
@@ -22,6 +23,11 @@ const AuthOverlay: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
     const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+    
+    // Registration step state
+    const [step, setStep] = useState(1);
+
+    const NIGERIAN_STATES = Object.keys(NIGERIAN_LOCATIONS).sort();
 
     useEffect(() => {
         setMode(authOverlayMode || 'login');
@@ -34,6 +40,7 @@ const AuthOverlay: React.FC = () => {
         setWard('');
         setShowConfirmationMessage(false);
         setShowResetConfirmation(false);
+        setStep(1);
     }, [authOverlayMode]);
 
     const handleClose = () => {
@@ -50,7 +57,21 @@ const AuthOverlay: React.FC = () => {
             setError(error.message);
         }
         setIsSubmitting(false);
-        // On success, Supabase redirects. The listener will handle the rest.
+    };
+
+    const handleNextStep = () => {
+        if (mode === 'register') {
+            if (!name || !email || !password) {
+                setError("Please fill in all credential fields.");
+                return;
+            }
+             if (password.length < 6) {
+                setError("Password must be at least 6 characters long.");
+                return;
+            }
+        }
+        setError('');
+        setStep(2);
     };
     
     const handleSubmit = async (e: React.FormEvent) => {
@@ -95,7 +116,7 @@ const AuthOverlay: React.FC = () => {
                 setError(error.message);
             } else {
                  dispatch({ type: 'SHOW_TOAST', payload: { message: 'Welcome back!' } });
-                 handleClose(); // Close the modal on successful login
+                 handleClose();
             }
         } else if (mode === 'forgot_password') {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -104,7 +125,7 @@ const AuthOverlay: React.FC = () => {
             if (error) {
                 setError(error.message);
             }
-            setShowResetConfirmation(true); // Show confirmation regardless of error to prevent email enumeration
+            setShowResetConfirmation(true);
         }
         setIsSubmitting(false);
     };
@@ -150,7 +171,7 @@ const AuthOverlay: React.FC = () => {
                         <Icons.FlyingFlagLogo className="w-12 h-12 mx-auto" />
                          <h2 className="text-2xl font-bold mt-2 text-primary dark:text-dark-text-primary">
                             {mode === 'login' && 'Welcome Back'}
-                            {mode === 'register' && 'Create Your Account'}
+                            {mode === 'register' && `Create Account (${step}/2)`}
                             {mode === 'forgot_password' && 'Reset Password'}
                         </h2>
                         <p className="text-sm text-secondary dark:text-dark-text-secondary">
@@ -163,108 +184,132 @@ const AuthOverlay: React.FC = () => {
                     {mode !== 'forgot_password' && (
                         <>
                              <div className="flex items-center bg-app-light dark:bg-dark-app-light rounded-lg p-1 mb-6">
-                                <button onClick={() => setMode('login')} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-md transition-colors duration-200 ${mode === 'login' ? 'bg-white dark:bg-dark-primary text-primary-green shadow-sm' : 'text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary'}`}>
+                                <button onClick={() => { setMode('login'); setStep(1); }} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-md transition-colors duration-200 ${mode === 'login' ? 'bg-white dark:bg-dark-primary text-primary-green shadow-sm' : 'text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary'}`}>
                                     Sign In
                                 </button>
-                                <button onClick={() => setMode('register')} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-md transition-colors duration-200 ${mode === 'register' ? 'bg-white dark:bg-dark-primary text-primary-green shadow-sm' : 'text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary'}`}>
+                                <button onClick={() => { setMode('register'); setStep(1); }} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-md transition-colors duration-200 ${mode === 'register' ? 'bg-white dark:bg-dark-primary text-primary-green shadow-sm' : 'text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary'}`}>
                                     Register
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
-                                <button 
-                                    onClick={handleGoogleLogin} 
-                                    className="w-full bg-white dark:bg-dark-app-light border border-ui-border dark:border-dark-ui-border text-primary dark:text-dark-text-primary font-semibold py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-secondary transition-colors flex items-center justify-center space-x-2"
-                                >
-                                    <Icons.GoogleIcon className="w-5 h-5" />
-                                    <span>Sign In with Google</span>
-                                </button>
+                             {step === 1 && (
+                                <div className="space-y-4">
+                                    <button 
+                                        onClick={handleGoogleLogin} 
+                                        className="w-full bg-white dark:bg-dark-app-light border border-ui-border dark:border-dark-ui-border text-primary dark:text-dark-text-primary font-semibold py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-secondary transition-colors flex items-center justify-center space-x-2"
+                                    >
+                                        <Icons.GoogleIcon className="w-5 h-5" />
+                                        <span>Sign In with Google</span>
+                                    </button>
 
-                                <div className="flex items-center">
-                                    <hr className="flex-grow border-t border-ui-border dark:border-dark-ui-border"/>
-                                    <span className="px-2 text-xs text-secondary dark:text-dark-text-secondary uppercase">Or</span>
-                                    <hr className="flex-grow border-t border-ui-border dark:border-dark-ui-border"/>
+                                    <div className="flex items-center">
+                                        <hr className="flex-grow border-t border-ui-border dark:border-dark-ui-border"/>
+                                        <span className="px-2 text-xs text-secondary dark:text-dark-text-secondary uppercase">Or</span>
+                                        <hr className="flex-grow border-t border-ui-border dark:border-dark-ui-border"/>
+                                    </div>
                                 </div>
-                            </div>
+                             )}
                         </>
                     )}
 
-
                     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                        {mode === 'register' && (
-                            <>
+                        {error && <p className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</p>}
+                        
+                        {mode === 'register' && step === 1 && (
+                            <div className="animate-fade-in-down space-y-4">
                                 <div>
                                     <label htmlFor="name-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Full Name</label>
                                     <input type="text" name="name" id="name-overlay" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Bisi Adebayo" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
                                 </div>
                                 <div>
+                                    <label htmlFor="email-register-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Email Address</label>
+                                    <input type="email" name="email" id="email-register-overlay" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                </div>
+                                <div>
+                                    <label htmlFor="password-register-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Password</label>
+                                    <input type="password" name="password" id="password-register-overlay" required value={password} onChange={e => setPassword(e.target.value)} placeholder="•••••••• (min. 6 characters)" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                </div>
+                                <div>
+                                    <button type="button" onClick={handleNextStep} className="w-full mt-2 bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all">Next</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {mode === 'register' && step === 2 && (
+                             <div className="animate-fade-in-down space-y-4">
+                                <div>
                                     <label htmlFor="state-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">State</label>
-                                    <select name="state" id="state-overlay" required value={state} onChange={e => setState(e.target.value)} className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition">
+                                    <select name="state" id="state-overlay" required value={state} onChange={e => { setState(e.target.value); setLga(''); setWard(''); }} className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition">
                                         <option value="">Select your state</option>
                                         {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="lga-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">LGA</label>
-                                        <input type="text" name="lga" id="lga-overlay" required value={lga} onChange={e => setLga(e.target.value)} placeholder="e.g. Ikeja" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="ward-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Ward</label>
-                                        <input type="text" name="ward" id="ward-overlay" required value={ward} onChange={e => setWard(e.target.value)} placeholder="e.g. Ward C" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
-                                    </div>
+                                <div>
+                                    <label htmlFor="lga-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">LGA</label>
+                                    <select name="lga" id="lga-overlay" required value={lga} onChange={e => { setLga(e.target.value); setWard(''); }} disabled={!state} className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition disabled:bg-gray-100 dark:disabled:bg-dark-app-light">
+                                        <option value="">Select LGA</option>
+                                        {state && NIGERIAN_LOCATIONS[state] && Object.keys(NIGERIAN_LOCATIONS[state]).map(l => <option key={l} value={l}>{l}</option>)}
+                                    </select>
                                 </div>
-                            </>
-                        )}
-                        {(mode === 'login' || mode === 'register' || mode === 'forgot_password') && !showResetConfirmation && (
-                             <div>
-                                <label htmlFor="email-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Email Address</label>
-                                <input type="email" name="email" id="email-overlay" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
-                            </div>
-                        )}
-                        {(mode === 'login' || mode === 'register') && (
-                            <div>
-                                <label htmlFor="password-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Password</label>
-                                <input type="password" name="password" id="password-overlay" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                <div>
+                                    <label htmlFor="ward-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Ward</label>
+                                    <select name="ward" id="ward-overlay" required value={ward} onChange={e => setWard(e.target.value)} disabled={!lga} className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition disabled:bg-gray-100 dark:disabled:bg-dark-app-light">
+                                        <option value="">Select Ward</option>
+                                        {state && lga && NIGERIAN_LOCATIONS[state]?.[lga]?.map(w => <option key={w} value={w}>{w}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                     <button type="button" onClick={() => setStep(1)} className="w-full bg-gray-200 dark:bg-dark-secondary text-primary dark:text-dark-text-primary font-bold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-opacity-80 transition-all">Back</button>
+                                    <button type="submit" disabled={isSubmitting} className="w-full bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-400">Create Account</button>
+                                </div>
                             </div>
                         )}
 
-                        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+                        {mode === 'login' && (
+                             <div className="space-y-4">
+                                <div>
+                                    <label htmlFor="email-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Email Address</label>
+                                    <input type="email" name="email" id="email-overlay" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                </div>
+                                <div>
+                                    <label htmlFor="password-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Password</label>
+                                    <input type="password" name="password" id="password-overlay" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                </div>
+                                 <button type="submit" disabled={isSubmitting} className="w-full mt-2 bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-400">
+                                    {isSubmitting ? 'Signing In...' : 'Sign In'}
+                                </button>
+                                <div className="text-center mt-4">
+                                    <button type="button" onClick={() => setMode('forgot_password')} className="text-sm text-secondary dark:text-dark-text-secondary hover:underline">
+                                        Forgot password?
+                                    </button>
+                                </div>
+                             </div>
+                        )}
                         
-                        {showResetConfirmation ? (
-                            <p className="text-sm text-center text-secondary dark:text-dark-text-secondary p-4 bg-app-light dark:bg-dark-app-light rounded-lg">
-                                If an account exists for <strong>{email}</strong>, you will receive an email with a password reset link shortly.
-                            </p>
-                        ) : (
-                             <div>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full mt-2 bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            {mode === 'login' ? 'Signing In...' : mode === 'register' ? 'Creating Account...' : 'Sending Link...'}
-                                        </>
-                                    ) : (
-                                        mode === 'login' ? 'Sign In' : mode === 'register' ? 'Create Account' : 'Send Reset Link'
-                                    )}
-                                </button>
+                        {mode === 'forgot_password' && (
+                            <div>
+                                {showResetConfirmation ? (
+                                    <p className="text-sm text-center text-secondary dark:text-dark-text-secondary p-4 bg-app-light dark:bg-dark-app-light rounded-lg">
+                                        If an account exists for <strong>{email}</strong>, you will receive an email with a password reset link shortly.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label htmlFor="email-forgot-overlay" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Email Address</label>
+                                            <input type="email" name="email" id="email-forgot-overlay" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary"/>
+                                        </div>
+                                        <button type="submit" disabled={isSubmitting} className="w-full mt-2 bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-400">
+                                            {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                                        </button>
+                                        <div className="text-center mt-4">
+                                            <button type="button" onClick={() => setMode('login')} className="text-sm text-secondary dark:text-dark-text-secondary hover:underline">
+                                                Back to Sign In
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
-                         
-                        {mode === 'login' && !showResetConfirmation && (
-                             <div className="text-center mt-4">
-                                <button onClick={() => setMode('forgot_password')} className="text-sm text-secondary dark:text-dark-text-secondary hover:underline">
-                                    Forgot password?
-                                </button>
-                            </div>
-                        )}
-
                     </form>
                 </div>
             </div>

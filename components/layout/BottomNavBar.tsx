@@ -7,30 +7,24 @@ const BottomNavBar: React.FC = () => {
     const dispatch = useAppDispatch();
 
     const handleTabClick = (tab: ListPanelTab) => {
-        if (tab === ListPanelTab.QUIET) {
-            dispatch({ type: 'TOGGLE_QUIET_SPACE' });
-        } else {
-            dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
-        }
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
     };
     
     const tabs = [
         { id: ListPanelTab.CHATS, icon: Icons.ChatBubbleOvalLeftEllipsis, label: 'Chats' },
         { id: ListPanelTab.NIGERIA, icon: Icons.Map, label: 'Nigeria' },
         { id: ListPanelTab.PEOPLE_CURRENT, icon: Icons.UserGroup, label: 'People' },
-        { id: ListPanelTab.TOWN_HALLS, icon: Icons.Landmark, label: 'Town Halls' },
-        { id: ListPanelTab.QUIET, icon: Icons.Moon, label: 'Quiet' },
+        { id: ListPanelTab.TOWN_HALLS, icon: Icons.Landmark, label: 'Halls' },
+        { id: ListPanelTab.LEADERBOARD, icon: Icons.Award, label: 'Leaders' },
     ];
     
-    const isPeopleTabActive = activeTab.startsWith('people');
+    const isPeopleTabActive = activeTab.startsWith('people_');
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-primary border-t border-ui-border dark:border-dark-ui-border flex justify-around items-start pt-2 pb-1 z-30">
             {tabs.map(tab => {
                 let isActive = false;
-                if (tab.id === ListPanelTab.QUIET) {
-                    isActive = isQuietSpaceActive;
-                } else if (tab.id === ListPanelTab.PEOPLE_CURRENT) {
+                if (tab.id === ListPanelTab.PEOPLE_CURRENT) {
                     isActive = isPeopleTabActive && !isQuietSpaceActive;
                 } else {
                     isActive = activeTab === tab.id && !isQuietSpaceActive;

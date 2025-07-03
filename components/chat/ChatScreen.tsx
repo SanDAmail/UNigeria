@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Persona, PersonaType, Message, GroundingChunk } from '../../types';
+import { Persona, PersonaType, Message, GroundingChunk, Report } from '../../types';
 import { getChatSessionPersona } from '../../personas/personas';
 import ChatHeader from './ChatHeader';
 import MessageArea from './MessageArea';
 import MessageInput from './MessageInput';
-import { getChatHistory, addMessage, clearChatHistory, incrementReplyCount, deleteTownHallPost, deleteDirectMessage, updateMessageContent, toggleLikePost } from '../../services/dbService';
-import { generateStreamingResponse, generateImageResponse } from '../../services/geminiService';
+import { addMessage, clearChatHistory, incrementReplyCount, deleteTownHallPost, deleteDirectMessage, updateMessageContent, toggleLikePost } from '../../services/dbService';
+import { getChatHistory } from '../../services/dbService';
+import { generateStreamingResponse, generateImageResponse, generateChatSummary } from '../../services/geminiService';
 import { townHallService } from '../../services/townHallService';
 import { ttsService } from '../../services/ttsService';
 import { INITIAL_CHAT_HISTORY, Icons } from '../../constants';
@@ -99,6 +100,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
   const dispatch = useAppDispatch();
   const chatId = personaType === PersonaType.TOWNHALL ? `townhall_${personaId}` : `${personaType}_${personaId}`;
 
+  // AI Summary State
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
   // In-Chat Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
@@ -157,8 +162,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id)); // remove thinking
       setMessages(prev => [...prev, ...newPosts]);
       
+      const report = reports.find(t => t.id === personaId);
       for (const post of newPosts) {
-          await addMessage(chatId, post);
+          await addMessage(chatId, post, report);
           await incrementReplyCount(personaId); 
           dispatch({ type: 'INCREMENT_REPLY_COUNT', payload: { reportId: personaId } });
       }
@@ -179,7 +185,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
       await addMessage(chatId, errorPost);
       updateChatListDetail(errorPost);
     }
-  }, [chatId, dispatch, personaId, updateChatListDetail]);
+  }, [chatId, dispatch, personaId, updateChatListDetail, reports]);
 
   useEffect(() => {
     const loadAndSetPersona = async () => {
@@ -253,6 +259,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
     
     setSearchQuery('');
     setQuotedMessage(null);
+    setSummary(null);
     loadAndSetPersona();
 
     return () => {
@@ -490,7 +497,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
         }
     }
 
-    await addMessage(chatId, finalUserMessage);
+    const report = persona.type === PersonaType.TOWNHALL ? reports.find(t => t.id === personaId) : undefined;
+    await addMessage(chatId, finalUserMessage, report);
 
     if (persona.type === PersonaType.TOWNHALL && finalUserMessage.sender === userProfile.id) {
         await incrementReplyCount(personaId);
@@ -629,6 +637,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
     }
   };
 
+  const handleSummarize = async () => {
+    if (isSummarizing) return;
+    setIsSummarizing(true);
+    setSummary(null); // Clear previous summary
+    try {
+        const result = await generateChatSummary(messages);
+        setSummary(result);
+    } catch (error) {
+        console.error("Failed to summarize chat:", error);
+        dispatch({ type: 'SHOW_TOAST', payload: { message: (error as Error).message || "Could not generate summary.", type: 'error' } });
+    } finally {
+        setIsSummarizing(false);
+    }
+  };
+
   const displayedMessages = useMemo(() => {
     if (searchQuery) {
         const resultsIds = new Set(searchResults);
@@ -659,6 +682,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
           searchResultsCount={searchResults.length}
           currentResultIndex={currentResultIndex}
           setCurrentResultIndex={setCurrentResultIndex}
+          onSummarize={handleSummarize}
+          isSummarizing={isSummarizing}
       />
       {showAssistantBanner && (
           <AssistantInfoBanner personaName={persona.name} onDismiss={() => setShowAssistantBanner(false)} />
@@ -671,6 +696,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ personaType, personaId }) => {
         onDeleteMessage={handleDeleteMessage}
         onEditPost={handleEditPost}
         onLikePost={handleLikePost}
+        summary={summary}
+        onDismissSummary={() => setSummary(null)}
       />
       <MessageInput 
         onSendMessage={handleSendMessage} 

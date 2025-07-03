@@ -1,8 +1,19 @@
-import React, { ReactNode } from 'react';
-import { Profile, Persona, PersonSubtype, PersonaType, Message } from './types';
+import React from 'react';
+import { Profile, Persona, PersonaType, Message } from './types';
 import { ALL_PROFILES as importedProfiles } from './data';
 
 export const Icons = {
+  Sparkles: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+    </svg>
+  ),
+  ChartPie: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+    </svg>
+  ),
   Heart: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d="M11.645 20.91a.75.75 0 0 1-1.29 0C8.763 17.854 3.75 14.28 3.75 9.426 3.75 6.7 5.823 4.5 8.414 4.5a4.802 4.802 0 0 1 3.586 1.704A4.802 4.802 0 0 1 15.586 4.5c2.59 0 4.664 2.2 4.664 4.926 0 4.854-5.013 8.428-6.605 11.484Z" />
@@ -112,28 +123,16 @@ export const Icons = {
             </linearGradient>
         </defs>
         
-        {/* Pole Shadow */}
         <rect x="11" y="1" width="6" height="80" fill="#000" fillOpacity="0.15" rx="2" />
-
-        {/* Pole */}
         <rect x="10" y="0" width="6" height="80" fill="url(#poleGradient)" rx="2" />
         <circle cx="13" cy="3" r="3" fill="#D4AF37" stroke="#fff" strokeOpacity="0.5" strokeWidth="0.5"/>
-
-        {/* Flag Shadow */}
         <use href="#wave" fill="#000" fillOpacity="0.2" transform="translate(1.5, 1.5)" />
-
-        {/* Flag */}
         <g clipPath="url(#waveClip)">
-            {/* Base Colors */}
             <rect x="16" y="10" width="26.66" height="50" fill="#008751" />
             <rect x="42.66" y="10" width="26.66" height="50" fill="#FFFFFF" />
             <rect x="69.32" y="10" width="26.67" height="50" fill="#008751" />
-
-            {/* Shading */}
             <rect x="16" y="10" width="80" height="50" fill="url(#flagShade)" />
         </g>
-        
-        {/* Text */}
         <text x="83" y="35" fontFamily="Inter, sans-serif" fontSize="14" fontWeight="bold" fill="#D4AF37" textAnchor="middle" transform="rotate(-5 83 35)">NG</text>
     </svg>
   ),
@@ -189,22 +188,12 @@ export const Icons = {
   ),
   SpeakerXMark: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l-2.25 2.25M19.5 12l2.25-2.25M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-    </svg>
-  ),
-  Link: (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-    </svg>
-  ),
-  Cog: (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226l.56-1.06c.22-.423.636-.714 1.096-.714h2.586c.46 0 .876.291 1.096.714l.56 1.06c.55.219 1.02.684 1.11 1.226l.16.958c.453.045.89.155 1.305.32l.843-.715a1.125 1.125 0 0 1 1.478.232l1.293 2.24a1.125 1.125 0 0 1-.232 1.478l-.715.843c.165.415.275.852.32 1.305l.958.16c.542.09.94.56 1.226 1.11l1.06.56c.423.22.714.636.714 1.096v2.586c0 .46-.291.876-.714 1.096l-1.06.56c-.286.55-.784 1.02-1.226 1.11l-.958.16c-.045.453-.155.89-.32 1.305l.715.843a1.125 1.125 0 0 1-.232 1.478l-1.293-2.24a1.125 1.125 0 0 1-1.478-.232l-.843-.715a6.743 6.743 0 0 1-1.305.32l-.16.958c-.09.542-.56 1.007-1.11 1.226l-.56 1.06c-.22.423-.636-.714-1.096-.714h-2.586c-.46 0-.876-.291-1.096-.714l-.56-1.06a2.246 2.246 0 0 1-1.11-1.226l-.16-.958a6.743 6.743 0 0 1-1.305-.32l-.843.715a1.125 1.125 0 0 1-1.478-.232l-1.293-2.24a1.125 1.125 0 0 1 .232-1.478l.715-.843a6.743 6.743 0 0 1-.32-1.305l-.958-.16a2.246 2.246 0 0 1-1.226-1.11l-1.06-.56a1.125 1.125 0 0 1-.714-1.096v-2.586c0-.46.291.876.714-1.096l1.06-.56c.286-.55.784-1.02 1.226-1.11l.958-.16c.045-.453.155.89.32-1.305l-.715-.843a1.125 1.125 0 0 1 .232-1.478l1.293-2.24a1.125 1.125 0 0 1 1.478.232l.843.715c.415-.165.852-.275 1.305-.32l.16-.958ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25M12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Zm0 0v-2.25m0 2.25V15M12 15v-2.25m0 0a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM7.5 15.75l-3-3m0 0-3 3m3-3h-2.25m-1.5 6V9a.75.75 0 0 1 .75-.75h13.5a.75.75 0 0 1 .75.75v6.75A.75.75 0 0 1 18 16.5H3.75a.75.75 0 0 1-.75-.75Z" />
     </svg>
   ),
   ChatBubbleOvalLeftEllipsis: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.761 9.761 0 0 1-2.542-.381 1.483 1.483 0 0 0-.97-.07L3 21l.635-4.444a1.483 1.483 0 0 0-.07-.97A9.761 9.761 0 0 1 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a.375.375 0 0 1 .265-.112c2.036-.023 3.84-1.28 3.84-3.219V6.75A2.25 2.25 0 0 0 16.5 4.5h-12A2.25 2.25 0 0 0 2.25 6.75v6.01Z" />
     </svg>
   ),
   Map: (props: React.SVGProps<SVGSVGElement>) => (
@@ -214,7 +203,7 @@ export const Icons = {
   ),
   UserGroup: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m-7.5-2.952a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18 18.72v-5.25A2.25 2.25 0 0 0 15.75 11.25H12.5v1.5m-6.375 1.5H12m0a2.25 2.25 0 0 1-2.25 2.25H6.375a2.25 2.25 0 0 1-2.25-2.25v-1.5m11.25-1.5a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.75-5.25c0-2.348-1.42-4.46-3.5-5.485M18 18.72A9.094 9.094 0 0 1 14.25 21c-2.348 0-4.46-1.42-5.485-3.5M18 18.72v-5.25c0-1.5-1.5-2.25-3.375-2.25s-3.375.75-3.375 2.25v5.25m5.25 0v-4.125c0-1.125-.9-2.062-2.062-2.062s-2.062.937-2.062 2.062V18.72m-3.375 0a9.06 9.06 0 0 1-2.062-2.062M10.5 18.72c-1.125 0-2.062-.937-2.062-2.062v-4.125c0-1.125.937-2.062 2.062-2.062m0 12.375a9.094 9.094 0 0 1-5.485-3.5c-2.08-3.025-2.08-7.42 0-10.445 1.025-1.485 2.5-2.67 4.125-3.375C12.183 4.673 13.867 5.25 15 6.375c1.133-1.125 2.817-1.702 4.125-1.29 1.625.408 3.1 1.59 4.125 3.375 2.08 3.025 2.08 7.42 0 10.445-1.025 1.485-2.5 2.67-4.125-3.375C13.867 21 12.183 20.427 11.25 19.5" />
     </svg>
   ),
   User: (props: React.SVGProps<SVGSVGElement>) => (
@@ -222,19 +211,9 @@ export const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
     </svg>
   ),
-  Flag: (props: React.SVGProps<SVGSVGElement>) => (
+  ChatBubbleBottomCenterText: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-    </svg>
-  ),
-  MagnifyingGlass: (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-    </svg>
-  ),
-  ArrowLeft: (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
     </svg>
   ),
   Plus: (props: React.SVGProps<SVGSVGElement>) => (
@@ -242,14 +221,9 @@ export const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
     </svg>
   ),
-  ChatBubbleBottomCenterText: (props: React.SVGProps<SVGSVGElement>) => (
-     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.761 9.761 0 0 1-2.542-.381 1.483 1.483 0 0 0-.97-.07L3 21l.635-4.444a1.483 1.483 0 0 0-.07-.97A9.761 9.761 0 0 1 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-    </svg>
-  ),
-  Copy: (props: React.SVGProps<SVGSVGElement>) => (
+  ArrowLeft: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m9.375 2.25c.621 0 1.125.504 1.125 1.125v3.375c0 .621-.504 1.125-1.125 1.125h-1.5a1.125 1.125 0 0 1-1.125-1.125v-3.375c0-.621.504-1.125 1.125-1.125h1.5Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
     </svg>
   ),
   XMark: (props: React.SVGProps<SVGSVGElement>) => (
@@ -262,6 +236,11 @@ export const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
     </svg>
   ),
+  Link: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+    </svg>
+  ),
   PaperAirplane: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
@@ -269,66 +248,58 @@ export const Icons = {
   ),
   Microphone: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m12 7.5v-1.5a6 6 0 0 0-6-6v-1.5a6 6 0 0 0-6 6v1.5m6 7.5v-7.5m0 0a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3V3m0 3a3 3 0 0 0-3 3v1.5a3 3 0 0 0 3 3m0-3h.008v.008H12v-.008Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m12 0v-1.5a6 6 0 0 0-12 0v1.5m12 0v-1.5a6 6 0 0 0-12 0v1.5" />
+    </svg>
+  ),
+  Cog: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.405 1.05c.412-1.363 2.522-1.363 2.934 0l.962 3.168a1.5 1.5 0 0 0 1.487 1.033h3.388c1.473 0 2.067 1.83.992 2.76l-2.73 2.15a1.5 1.5 0 0 0-.54 1.734l.962 3.168c.412 1.363-.923 2.65-2.228 1.868l-2.73-2.15a1.5 1.5 0 0 0-1.734 0l-2.73 2.15c-1.305.782-2.64-.505-2.228-1.868l.962-3.168a1.5 1.5 0 0 0-.54-1.734l-2.73-2.15c-1.075-.93-.48-2.76.992-2.76h3.388a1.5 1.5 0 0 0 1.487-1.033l.962-3.168Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" />
+    </svg>
+  ),
+  ShieldCheck: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+  ),
+  DocumentText: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
     </svg>
   ),
   GlobeAsiaAustralia: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c.502 0 1.001-.025 1.493-.072M12 3c.502 0 1.001.025 1.493.072M12 3a9.004 9.004 0 0 0-8.716 6.747M12 3c-4.819 0-8.716 3.9-8.716 8.747M15.095 15.166A4.524 4.524 0 0 0 12 14.25a4.524 4.524 0 0 0-3.095.916M15.095 15.166c.264.18.514.38.75.598M15.095 15.166a8.963 8.963 0 0 1-5.99 0M15.095 15.166a4.523 4.523 0 0 1 .75-.598M8.905 15.166c-.264.18-.514.38-.75.598M8.905 15.166a8.963 8.963 0 0 0 5.99 0M8.905 15.166a4.523 4.523 0 0 0-.75-.598M12 3.75a4.5 4.5 0 0 0-4.5 4.5v.75A4.5 4.5 0 0 0 12 13.5h.008v.008H12a4.5 4.5 0 0 0 4.5-4.5V8.25A4.5 4.5 0 0 0 12 3.75Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.82m5.84-2.56a12.722 12.722 0 0 0-5.84-2.56m0 0a12.722 12.722 0 0 1-5.84 2.56m5.84-2.56V4.5a6 6 0 0 0-5.84 7.38m11.68 0a6 6 0 1 0-11.68 0" />
     </svg>
   ),
-   Beaker: (props: React.SVGProps<SVGSVGElement>) => (
+  Beaker: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.5 1.581L5.13 14.499a2.25 2.25 0 0 0 0 3.182l2.652 2.651a2.25 2.25 0 0 0 3.182 0l3.96-3.959a2.25 2.25 0 0 1 1.581-.5h5.714" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="m16.5 3-3 3m0 0 3 3m-3-3h-2.25m4.5 13.5h-2.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.652a3.75 3.75 0 0 1 0-5.304m5.304 0a3.75 3.75 0 0 1 0 5.304m-7.425 2.122a6.75 6.75 0 0 1 0-9.546m9.546 0a6.75 6.75 0 0 1 0 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.788m13.788 0c3.808 3.808 3.808 9.98 0 13.788M12 12h.008v.008H12V12Z" />
     </svg>
   ),
-  UserCircle: (props: React.SVGProps<SVGSVGElement>) => (
+  Flag: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
     </svg>
   ),
-  ClipboardDocumentCheck: (props: React.SVGProps<SVGSVGElement>) => (
+  MagnifyingGlass: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
     </svg>
-  )
+  ),
+  Bell: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+    </svg>
+  ),
 };
 
-export const TownHallCategoryIcons: { [key: string]: React.FC<any> } = {
-  'town-halls': Icons.UserGroup,
-  'community-projects': Icons.ChatBubbleBottomCenterText,
-  'infrastructure': Icons.Landmark,
-  'security': Icons.Scale,
-  'education': Icons.AcademicCap,
-  'healthcare': Icons.Heart,
-};
-
-export const INSPIRATIONAL_QUOTES: { author: string, quote: string }[] = [
-    {
-        author: 'Wole Soyinka',
-        quote: 'The greatest threat to freedom is the absence of criticism.'
-    },
-    {
-        author: 'Chinua Achebe',
-        quote: 'Until the lions have their own historians, the history of the hunt will always glorify the hunter.'
-    },
-    {
-        author: 'Ngozi Okonjo-Iweala',
-        quote: 'Investing in women is smart economics.'
-    },
-    {
-        author: 'Olusegun Obasanjo',
-        quote: 'The future of our country is too precious to be gambled with.'
-    },
-    {
-        author: 'Fela Kuti',
-        quote: 'Music is the weapon of the future.'
-    },
-    {
-        author: 'Chimamanda Ngozi Adichie',
-        quote: 'The single story creates stereotypes, and the problem with stereotypes is not that they are untrue, but that they are incomplete.'
-    }
+export const INSPIRATIONAL_QUOTES = [
+    { author: 'Chinua Achebe', quote: 'Until the lions have their own historians, the history of the hunt will always glorify the hunter.' },
+    { author: 'Wole Soyinka', quote: 'The greatest threat to freedom is the absence of criticism.' },
+    { author: 'Nelson Mandela', quote: 'Education is the most powerful weapon which you can use to change the world.' },
+    { author: 'Ahmadu Bello', quote: 'The best way to know a country is to know its people.'},
+    { author: 'Nnamdi Azikiwe', quote: 'Originality is the essence of true scholarship. Creativity is the soul of the true scholar.'}
 ];
 
 export const ALL_PROFILES: Profile[] = importedProfiles;
@@ -340,37 +311,20 @@ export const PERSONA_LIST: Persona[] = ALL_PROFILES.map(p => ({
     subtype: p.personSubtype,
     avatar: p.avatar,
     description: p.description,
-    subtitle: p.title || p.slogan || p.description,
-    systemInstruction: '', // will be generated on-demand
-    greeting: '', // will be generated on-demand
+    subtitle: p.slogan || p.title || '',
+    systemInstruction: '', // will be populated by getChatSessionPersona
+    greeting: '', // will be populated by getChatSessionPersona
 }));
 
-export const INITIAL_CHAT_HISTORY: { [chatId: string]: Message[] } = {
-    'townhall_topic-1': [
-        { id: 'post_1', text: 'What are the potential impacts of the new fuel subsidy policy on the average Nigerian?', sender: 'user', timestamp: Date.now() - 10000, type: 'post', authorInfo: { name: 'Admin', avatar: 'https://picsum.photos/seed/admin/40/40' }, isOriginalPost: true },
-        { id: 'post_2', text: 'The policy, while initially challenging due to price increases, is intended to free up funds for critical infrastructure projects and reduce the strain on government finances.', sender: 'ai', timestamp: Date.now() - 8000, type: 'post', authorInfo: { name: 'Govt. Economist', avatar: 'https://picsum.photos/seed/econ/40/40' } },
-    ]
+export const TownHallCategoryIcons: { [key: string]: React.ComponentType<{ className?: string }> } = {
+    'Infrastructure': Icons.BuildingOffice,
+    'Security': Icons.ShieldCheck,
+    'Economy': Icons.Scale,
+    'Education': Icons.AcademicCap,
+    'Healthcare': Icons.Heart,
+    'Accountability': Icons.DocumentText,
+    'Social Welfare': Icons.UserGroup,
+    'Environment': Icons.Globe,
 };
 
-export const USER_AVATAR_OPTIONS: string[] = [
-    'https://picsum.photos/seed/avatar1/96/96',
-    'https://picsum.photos/seed/avatar2/96/96',
-    'https://picsum.photos/seed/avatar3/96/96',
-    'https://picsum.photos/seed/avatar4/96/96',
-    'https://picsum.photos/seed/avatar5/96/96',
-    'https://picsum.photos/seed/avatar6/96/96',
-    'https://picsum.photos/seed/avatar7/96/96',
-    'https://picsum.photos/seed/avatar8/96/96',
-];
-
-export const NIGERIAN_STATES = [
-    "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River", "Delta",
-    "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT - Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano",
-    "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun",
-    "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
-];
-
-export const LGAS: { [key: string]: string[] } = {
-    "Lagos": ["Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Epe", "Eti-Osa", "Ibeju-Lekki", "Ifako-Ijaiye", "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", "Mushin", "Ojo", "Oshodi-Isolo", "Shomolu", "Surulere"],
-    "Kano": ["Ajingi", "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Dawakin Kudu", "Dawakin Tofa", "Doguwa", "Fagge", "Gabasawa", "Garko", "Garun Mallam", "Gaya", "Gezawa", "Gwale", "Gwarzo", "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", "Kura", "Madobi", "Makoda", "Minjibir", "Nasarawa", "Rano", "Rimin Gado", "Rogo", "Shanono", "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada", "Ungogo", "Warawa", "Wudil"]
-};
+export const INITIAL_CHAT_HISTORY: { [chatId: string]: Message[] } = {};

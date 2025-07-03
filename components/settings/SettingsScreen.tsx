@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
 import { UserProfile } from '../../types';
-import { Icons, NIGERIAN_STATES, LGAS } from '../../constants';
+import { Icons } from '../../constants';
+import { NIGERIAN_LOCATIONS } from '../../data/locations';
 import { upsertProfile, supabase } from '../../services/supabaseService';
 import { uploadUserAvatar, declareCandidacy } from '../../services/dbService';
+import ManifestoEditor from './ManifestoEditor';
 
 const getCurrentElectionCycle = (): string => {
     const year = new Date().getFullYear();
@@ -188,6 +191,8 @@ const SettingsScreen: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const NIGERIAN_STATES = Object.keys(NIGERIAN_LOCATIONS).sort();
+
     useEffect(() => {
         setProfile(userProfile);
         setHasChanges(false);
@@ -203,6 +208,7 @@ const SettingsScreen: React.FC = () => {
                 profile.state !== userProfile.state ||
                 profile.lga !== userProfile.lga ||
                 profile.ward !== userProfile.ward ||
+                JSON.stringify(profile.manifesto) !== JSON.stringify(userProfile.manifesto) ||
                 avatarFile
             ) {
                 setHasChanges(true);
@@ -224,7 +230,13 @@ const SettingsScreen: React.FC = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setProfile(prev => ({ ...prev, [name]: value }));
+        if (name === 'state') {
+            setProfile(prev => ({ ...prev, state: value, lga: '', ward: '' }));
+        } else if (name === 'lga') {
+            setProfile(prev => ({...prev, lga: value, ward: ''}));
+        } else {
+            setProfile(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleAvatarClick = () => {
@@ -266,17 +278,13 @@ const SettingsScreen: React.FC = () => {
 
         try {
             const updatedProfileData = {
+                ...profile,
                 id: profile.id,
-                name: profile.name,
-                title: profile.title,
                 avatar: newAvatarUrl,
-                state: profile.state,
-                lga: profile.lga,
-                ward: profile.ward,
             };
             
-            await upsertProfile(updatedProfileData);
-            dispatch({ type: 'SET_USER_PROFILE', payload: { ...profile, avatar: newAvatarUrl } });
+            await upsertProfile(updatedProfileData as any);
+            dispatch({ type: 'SET_USER_PROFILE', payload: updatedProfileData });
             dispatch({ type: 'SHOW_TOAST', payload: { message: 'Profile updated successfully!' } });
             setHasChanges(false);
             setAvatarFile(null);
@@ -321,7 +329,10 @@ const SettingsScreen: React.FC = () => {
                 {isAuthenticated && (
                      <div>
                         <h2 className="text-lg font-semibold text-primary dark:text-dark-text-primary mb-4">Governance</h2>
-                        <CandidacySection />
+                        <div className="space-y-4">
+                            <CandidacySection />
+                            {profile.is_candidate && <ManifestoEditor profile={profile} setProfile={setProfile} />}
+                        </div>
                     </div>
                 )}
                 
@@ -347,7 +358,7 @@ const SettingsScreen: React.FC = () => {
                             <div>
                                 <p className="font-bold text-lg text-primary dark:text-dark-text-primary">{profile.name}</p>
                                 <p className="text-secondary dark:text-dark-text-secondary">{profile.title}</p>
-                                 <p className="text-xs text-secondary dark:text-dark-text-secondary mt-1">{profile.state}, {profile.lga}</p>
+                                 <p className="text-xs text-secondary dark:text-dark-text-secondary mt-1">{profile.ward}, {profile.lga}, {profile.state}</p>
                             </div>
                         </div>
                     </div>
@@ -404,23 +415,26 @@ const SettingsScreen: React.FC = () => {
                             className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition disabled:bg-gray-100 dark:disabled:bg-dark-app-light"
                         >
                              <option value="">Select your LGA</option>
-                             {profile.state && LGAS[profile.state] && LGAS[profile.state].map(lga => (
+                             {profile.state && NIGERIAN_LOCATIONS[profile.state] && Object.keys(NIGERIAN_LOCATIONS[profile.state]).map(lga => (
                                  <option key={lga} value={lga}>{lga}</option>
                              ))}
                         </select>
                     </div>
                      <div>
                         <label htmlFor="ward" className="block text-sm font-medium text-secondary dark:text-dark-text-secondary mb-1">Ward</label>
-                        <input 
-                            type="text" 
-                            name="ward" 
-                            id="ward" 
-                            value={profile.ward || ''} 
-                            onChange={handleInputChange} 
-                            placeholder="e.g. Ward C"
-                            disabled={!isAuthenticated}
-                            className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition placeholder:text-secondary dark:placeholder:text-dark-text-secondary disabled:bg-gray-100 dark:disabled:bg-dark-app-light"
-                        />
+                         <select
+                            name="ward"
+                            id="ward"
+                            value={profile.ward || ''}
+                            onChange={handleInputChange}
+                            disabled={!isAuthenticated || !profile.lga}
+                            className="w-full bg-white dark:bg-dark-secondary border border-ui-border dark:border-dark-ui-border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-green transition disabled:bg-gray-100 dark:disabled:bg-dark-app-light"
+                        >
+                             <option value="">Select your Ward</option>
+                             {profile.state && profile.lga && NIGERIAN_LOCATIONS[profile.state]?.[profile.lga]?.map(ward => (
+                                 <option key={ward} value={ward}>{ward}</option>
+                             ))}
+                        </select>
                     </div>
                 </div>
 

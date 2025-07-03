@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icons } from '../../constants';
 import { useAppState, useAppDispatch } from '../../context/AppContext';
+import NotificationBell from './NotificationBell';
 
 const ThemeToggleButton: React.FC = () => {
     const { theme } = useAppState();
@@ -22,8 +23,21 @@ const ThemeToggleButton: React.FC = () => {
     );
 };
 
+const QuietSpaceToggleButton: React.FC = () => {
+    const dispatch = useAppDispatch();
+    return (
+        <button
+            onClick={() => dispatch({ type: 'TOGGLE_QUIET_SPACE' })}
+            className="p-2 rounded-full text-secondary hover:bg-app-light hover:text-primary transition-colors dark:text-dark-text-secondary dark:hover:bg-dark-app-light dark:hover:text-dark-text-primary"
+            aria-label="Toggle Quiet Space"
+        >
+            <Icons.Moon className="w-6 h-6" />
+        </button>
+    );
+}
+
 const GlobalHeader: React.FC = () => {
-    const { userProfile } = useAppState();
+    const { userProfile, isAuthenticated } = useAppState();
     const dispatch = useAppDispatch();
     
     const handleSettingsClick = () => {
@@ -47,6 +61,8 @@ const GlobalHeader: React.FC = () => {
                     <span className="hidden sm:block font-semibold text-sm text-primary dark:text-dark-text-primary">{userProfile.name}</span>
                 </div>
                  <ThemeToggleButton />
+                 {isAuthenticated && <NotificationBell />}
+                 <QuietSpaceToggleButton />
                  <button 
                     onClick={handleSettingsClick}
                     className="p-2 rounded-full text-secondary hover:bg-app-light hover:text-primary transition-colors dark:text-dark-text-secondary dark:hover:bg-dark-app-light dark:hover:text-dark-text-primary"

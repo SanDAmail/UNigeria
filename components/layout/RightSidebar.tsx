@@ -2,16 +2,19 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppState, useAppDispatch, ListPanelTab } from '../../context/AppContext';
-import { Profile, PersonSubtype, GroundingChunk, PersonaType, UserProfile, Report } from '../../types';
+import { Profile, PersonSubtype, GroundingChunk, PersonaType, UserProfile, Report, TownHallSubTab } from '../../types';
 import { getProfile } from '../../personas/personas';
 import { generateGroundedText, generateArbitraryJson } from '../../services/geminiService';
 import { Icons, ALL_PROFILES } from '../../constants';
 import ProfileSection from '../profile/ProfileSection';
+import ManifestoSection from '../profile/ManifestoSection';
 import { useWindowSize } from '../../hooks/useWindowSize';
 import ChatListItem from '../list/ChatListItem';
-import { getUserProfileById, getReports } from '../../services/dbService';
+import { getUserProfileById, getReports, getEndorsementsForUser, addEndorsement } from '../../services/dbService';
 import ReportListItem from '../list/TopicListItem';
 import { supabase } from '../../services/supabaseService';
+import { getCivicRank } from '../../utils/getCivicRank';
+import ReputationActivityFeed from '../profile/ReputationActivityFeed';
 
 const SidebarWrapper: React.FC<{title: string; children: React.ReactNode; onBack?: () => void}> = ({ title, children, onBack }) => {
     const { width } = useWindowSize();
@@ -485,19 +488,105 @@ const PersonaProfileViewer: React.FC<{ profileId: string; onBack?: () => void }>
     );
 };
 
+const getCurrentElectionCycle = (): string => {
+    const year = new Date().getFullYear();
+    const startYear = year % 2 === 0 ? year : year - 1;
+    return `${startYear}-${startYear + 2}`;
+};
+
+type UserProfileTab = 'overview' | 'manifesto' | 'activity' | 'reports';
+
 const UserProfileViewer: React.FC<{ userId: string; onBack: () => void; }> = ({ userId, onBack }) => {
+    const { userProfile: currentUser, isAuthenticated, session, townHallCategories } = useAppState();
+    const dispatch = useAppDispatch();
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [userReports, setUserReports] = useState<Report[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isEndorsing, setIsEndorsing] = useState(false);
+    const [canEndorse, setCanEndorse] = useState(false);
+    const [activeTab, setActiveTab] = useState<UserProfileTab>('overview');
+    const [isLoadingReports, setIsLoadingReports] = useState(false);
+
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchProfileData = async () => {
             setIsLoading(true);
+            setCanEndorse(false); // Reset on profile change
             const userProfile = await getUserProfileById(userId);
             setProfile(userProfile);
+
+            if (userProfile?.is_candidate && isAuthenticated && currentUser.id && currentUser.id !== userProfile.id) {
+                 if (userProfile.state !== currentUser.state || userProfile.lga !== currentUser.lga) {
+                     setCanEndorse(false);
+                } else {
+                    const endorsements = await getEndorsementsForUser(currentUser.id);
+                    const currentCycle = getCurrentElectionCycle();
+                    const hasEndorsedInLGA = endorsements.some(e => {
+                        return e.election_cycle === currentCycle;
+                    });
+                    
+                    if (!hasEndorsedInLGA) {
+                        setCanEndorse(true);
+                    }
+                }
+            }
             setIsLoading(false);
         };
-        fetchProfile();
-    }, [userId]);
+        fetchProfileData();
+    }, [userId, isAuthenticated, currentUser.id, currentUser.state, currentUser.lga]);
+    
+    useEffect(() => {
+        if(profile) {
+            setActiveTab('overview');
+        }
+    }, [profile?.id]);
+
+     useEffect(() => {
+        const fetchUserReports = async () => {
+            if (activeTab !== 'reports' || !userId) return;
+            
+            setIsLoadingReports(true);
+            try {
+                const fetchedReports = await getReports({ author_id: userId });
+                setUserReports(fetchedReports);
+            } catch(e) {
+                console.error("Failed to fetch user reports:", e);
+                setUserReports([]);
+            } finally {
+                setIsLoadingReports(false);
+            }
+        };
+
+        fetchUserReports();
+    }, [activeTab, userId]);
+
+
+    const handleEndorse = async () => {
+        if (!profile || !currentUser.id || !canEndorse) return;
+        
+        setIsEndorsing(true);
+        const result = await addEndorsement(profile.id!, currentUser);
+        
+        if (result.success) {
+            dispatch({ type: 'SHOW_TOAST', payload: { message: result.message } });
+            dispatch({ type: 'UPDATE_CANDIDATE_ENDORSEMENT', payload: { candidateId: profile.id! } });
+            setProfile(p => p ? { ...p, endorsement_count: (p.endorsement_count || 0) + 1 } : null);
+            setCanEndorse(false);
+        } else {
+            dispatch({ type: 'SHOW_TOAST', payload: { message: result.message, type: 'error' } });
+        }
+        setIsEndorsing(false);
+    };
+
+    const handleReportClick = (report: Report) => {
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: ListPanelTab.TOWN_HALLS });
+        dispatch({ type: 'SET_TOWNHALL_SUB_TAB', payload: TownHallSubTab.HOT_REPORTS });
+        dispatch({ type: 'SET_ACTIVE_TOWNHALL_CATEGORY', payload: report.category_id });
+        setTimeout(() => {
+            dispatch({ type: 'SET_ACTIVE_REPORT', payload: report.id });
+        }, 50);
+    };
+
 
     if (isLoading) {
          return (
@@ -515,14 +604,109 @@ const UserProfileViewer: React.FC<{ userId: string; onBack: () => void; }> = ({ 
         );
     }
     
+    const isOwnProfile = currentUser.id === profile.id;
+    const civicRank = getCivicRank(profile.reputation_score || 0);
+
+    const tabs: {id: UserProfileTab, label: string}[] = [{ id: 'overview', label: 'Overview' }, { id: 'activity', label: 'Activity'}, {id: 'reports', label: 'Reports'}];
+    if (profile.is_candidate && profile.manifesto && profile.manifesto.length > 0) {
+        tabs.splice(1, 0, { id: 'manifesto', label: 'Manifesto' });
+    }
+
     return (
-        <SidebarWrapper title="User Profile" onBack={onBack}>
+        <SidebarWrapper title={isOwnProfile ? "My Profile" : "User Profile"} onBack={onBack}>
             <div className="text-center">
                 <img src={profile.avatar} alt={profile.name} className="w-24 h-24 rounded-full mx-auto border-4 border-white dark:border-dark-primary shadow-lg" />
                 <h1 className="text-2xl font-bold mt-4 break-words">{profile.name}</h1>
                 <p className="text-secondary dark:text-dark-text-secondary break-words">{profile.title}</p>
+                <p className="text-sm text-secondary dark:text-dark-text-secondary mt-1">{profile.lga}, {profile.state} State</p>
+                <div className="mt-4 inline-flex items-center gap-2 bg-app-light dark:bg-dark-app-light px-3 py-1 rounded-full">
+                    <civicRank.icon className="w-5 h-5 text-accent-gold"/>
+                    <span className="font-semibold text-sm text-primary dark:text-dark-text-primary">{civicRank.name}</span>
+                    <span className="text-xs text-secondary dark:text-dark-text-secondary">({profile.reputation_score || 0} pts)</span>
+                </div>
             </div>
-            {/* Future enhancements like user's topics could go here */}
+             {profile.is_candidate && (
+                <div className="bg-app-light dark:bg-dark-app-light p-4 rounded-lg flex flex-col items-center text-center mt-4">
+                    <h3 className="text-lg font-semibold text-primary-green">Candidate for Office</h3>
+                    <p className="text-sm text-secondary dark:text-dark-text-secondary">Running for representative in {profile.lga}, {profile.state}.</p>
+                    <div className="flex items-center space-x-2 text-2xl font-bold my-2">
+                        <Icons.ShieldCheck className="w-8 h-8 text-primary-green" />
+                        <span>{profile.endorsement_count || 0}</span>
+                        <span className="text-base font-normal text-secondary dark:text-dark-text-secondary">Endorsements</span>
+                    </div>
+                    {canEndorse && !isOwnProfile ? (
+                        <button
+                            onClick={handleEndorse}
+                            disabled={isEndorsing}
+                            className="w-full bg-primary-green text-white font-semibold py-2 px-4 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center disabled:bg-gray-400"
+                        >
+                            {isEndorsing ? 'Endorsing...' : `Endorse in ${profile.lga}`}
+                        </button>
+                    ) : (
+                       !isOwnProfile && isAuthenticated && currentUser.state === profile.state && currentUser.lga === profile.lga &&
+                        <p className="text-sm text-green-600 dark:text-green-400 font-semibold mt-2">You have already endorsed a candidate in your LGA.</p>
+                    )}
+                </div>
+            )}
+            
+            <div className="border-b border-ui-border dark:border-dark-ui-border">
+                <nav className="-mb-px flex space-x-4">
+                    {tabs.map(tab => (
+                         <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex-shrink-0 whitespace-nowrap pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                                activeTab === tab.id
+                                ? 'border-primary-green text-primary-green'
+                                : 'border-transparent text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text-primary hover:border-gray-300 dark:hover:border-dark-ui-border'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </nav>
+            </div>
+
+            <div className="animate-fade-in-down">
+                {activeTab === 'overview' && (
+                    <div className='text-center text-sm text-secondary p-4'>
+                       Member since {new Date(session?.user.created_at || Date.now()).toLocaleDateString()}.
+                    </div>
+                )}
+                {activeTab === 'manifesto' && profile.manifesto && (
+                     <div className="space-y-6">
+                        <ManifestoSection manifesto={profile.manifesto} />
+                    </div>
+                )}
+                {activeTab === 'activity' && (
+                    <ReputationActivityFeed userId={profile.id!} />
+                )}
+                {activeTab === 'reports' && (
+                     isLoadingReports ? (
+                        <div className="p-4 text-center text-secondary">Loading reports...</div>
+                     ) : (
+                        <div className="space-y-2">
+                            {userReports.length > 0 ? (
+                                userReports.map(report => {
+                                    const categoryName = townHallCategories.find(c => c.id === report.category_id)?.name;
+                                    return (
+                                        <ReportListItem
+                                            key={report.id}
+                                            report={report}
+                                            onClick={() => handleReportClick(report)}
+                                            showCategory
+                                            categoryName={categoryName}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                <p className="text-center text-sm text-secondary dark:text-dark-text-secondary p-4">This user has not filed any reports yet.</p>
+                            )}
+                        </div>
+                    )
+                )}
+            </div>
+
         </SidebarWrapper>
     );
 };

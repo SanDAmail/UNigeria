@@ -69,6 +69,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [displayedText, setDisplayedText] = useState(message.isStreaming ? '' : message.text);
+
+  useEffect(() => {
+    if (message.isStreaming && displayedText.length < message.text.length) {
+        const timeoutId = setTimeout(() => {
+            setDisplayedText(message.text.slice(0, displayedText.length + 1));
+        }, 30); // Typing speed in ms
+        return () => clearTimeout(timeoutId);
+    }
+    // If stream is finished but text doesn't match (e.g., due to fast streaming), sync it.
+    if (!message.isStreaming && displayedText !== message.text) {
+        setDisplayedText(message.text);
+    }
+  }, [displayedText, message.text, message.isStreaming]);
   
   const isAiMessage = message.sender === 'ai' || (message.type === 'post' && message.sender !== userProfile.id);
   
@@ -210,7 +224,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
   const bubbleShape = 'rounded-xl';
   const searchHighlightClass = message.isCurrentSearchResult ? 'ring-2 ring-accent-gold ring-offset-2 ring-offset-adire-pattern dark:ring-offset-dark-primary' : '';
 
-  const contentToRender = message.text;
+  const contentToRender = displayedText;
   const showBlinkingCursor = isAiMessage && message.isStreaming && !isEditing;
 
 
