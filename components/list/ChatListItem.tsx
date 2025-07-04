@@ -24,7 +24,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ data, isActive, onClick }) 
         <div className="flex flex-col items-center text-center">
           <img src={avatar} alt={name} className="w-16 h-16 rounded-full border-2 border-white shadow-md" />
           <p className="font-bold text-lg text-primary dark:text-dark-text-primary mt-3">{name}</p>
-          <p className="text-sm text-secondary dark:text-dark-text-secondary italic mt-1">{`"${lastMessage}"`}</p>
+          <p className="text-sm text-secondary dark:text-dark-text-secondary italic mt-1 truncate w-full max-w-xs">{`"${lastMessage}"`}</p>
         </div>
       </div>
     );

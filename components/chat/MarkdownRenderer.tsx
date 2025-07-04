@@ -16,7 +16,8 @@ const parseMarkdown = (text: string): string => {
     let processedLine = line
       .replace(/<color-green>(.*?)<\/color-green>/g, '<span class="text-primary-green font-semibold">$1</span>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
     if (/^>\s?/.test(processedLine)) {
       if (inList) {
