@@ -20,37 +20,79 @@ const ranks = [
 
 const UnauthenticatedDashboard: React.FC = () => {
     const dispatch = useAppDispatch();
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
-
+<<<<<<< HEAD
     const handleLogin = () => dispatch({ type: 'SHOW_AUTH_OVERLAY', payload: 'login' });
     const handleRegister = () => dispatch({ type: 'SHOW_AUTH_OVERLAY', payload: 'register' });
-    const handleGoogleLogin = async () => {
-        setIsSubmitting(true);
-        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-        if (error) {
-            dispatch({ type: 'SHOW_TOAST', payload: { message: `Error: ${error.message}`, type: 'error' } });
-            setIsSubmitting(false);
-        }
-    };
+    
+    const featureCards = [
+        { title: "Chat with Leaders", description: "Engage with digital personas of Nigerian leaders, past and present.", icon: Icons.UserGroup },
+        { title: "Explore Nigeria", description: "Discover the rich history and culture of all 36 states and the FCT.", icon: Icons.Map },
+        { title: "Join Town Halls", description: "Participate in civic discussions, file reports, and track their progress.", icon: Icons.Landmark },
+    ];
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-adire-pattern">
-            <div className="bg-white/80 dark:bg-dark-primary/80 backdrop-blur-sm p-10 rounded-2xl shadow-lg max-w-lg">
-                <Icons.FlyingFlagLogo className="w-20 h-20 mx-auto" />
-                <h1 className="text-3xl font-bold mt-4 text-primary-green">Be The Voice Of Your Community</h1>
-                <p className="text-secondary dark:text-dark-text-secondary mt-2 mb-6">
-                    Sign in or create an account to file reports, endorse candidates, and build a better Nigeria.
+        <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 bg-app-light dark:bg-dark-primary text-center">
+            <Icons.FlyingFlagLogo className="w-24 h-24" />
+            <h1 className="text-4xl font-bold mt-4 text-primary dark:text-dark-text-primary">Welcome to UNigeria</h1>
+            <p className="text-lg text-secondary dark:text-dark-text-secondary mt-2 max-w-2xl">
+                A new platform for civic engagement. Start conversations with digital personas of leaders, explore states, and participate in forums to build a better Nigeria.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-5xl">
+                {featureCards.map(feature => {
+                    const Icon = feature.icon;
+                    return (
+                        <div key={feature.title} className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-sm border border-ui-border dark:border-dark-ui-border">
+                            <Icon className="w-10 h-10 mx-auto text-primary-green"/>
+                            <h3 className="text-lg font-semibold mt-4 text-primary dark:text-dark-text-primary">{feature.title}</h3>
+                            <p className="text-sm text-secondary dark:text-dark-text-secondary mt-1">{feature.description}</p>
+                        </div>
+                    );
+                })}
+            </div>
+            
+            <div className="mt-12 space-y-4 max-w-md w-full">
+                <button onClick={handleRegister} className="w-full bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all">Get Started</button>
+                <p className="text-sm text-secondary dark:text-dark-text-secondary">
+                    Already have an account? <button onClick={handleLogin} className="font-semibold text-primary-green hover:underline">Sign In</button>
                 </p>
-                <div className="space-y-3">
-                    <button onClick={handleGoogleLogin} disabled={isSubmitting} className="w-full bg-white dark:bg-dark-app-light border border-ui-border dark:border-dark-ui-border text-primary dark:text-dark-text-primary font-semibold py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-secondary transition-colors flex items-center justify-center space-x-2">
-                        <Icons.GoogleIcon className="w-5 h-5" />
-                        <span>Continue with Google</span>
-                    </button>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={handleLogin} className="w-full bg-primary-green/10 text-primary-green font-semibold py-2.5 rounded-lg hover:bg-primary-green/20 transition-colors">Sign In</button>
-                        <button onClick={handleRegister} className="w-full bg-primary-green text-white font-semibold py-2.5 rounded-lg hover:bg-opacity-90 transition-colors">Register</button>
-                    </div>
-                </div>
+=======
+    const handleLogin = () => dispatch({ type: 'SHOW_AUTH_OVERLAY', payload: 'login' });
+    const handleRegister = () => dispatch({ type: 'SHOW_AUTH_OVERLAY', payload: 'register' });
+    
+    const featureCards = [
+        { title: "Chat with Leaders", description: "Engage with digital personas of Nigerian leaders, past and present.", icon: Icons.UserGroup },
+        { title: "Explore Nigeria", description: "Discover the rich history and culture of all 36 states and the FCT.", icon: Icons.Map },
+        { title: "Join Town Halls", description: "Participate in civic discussions, file reports, and track their progress.", icon: Icons.Landmark },
+    ];
+
+    return (
+        <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 bg-app-light dark:bg-dark-primary text-center">
+            <Icons.FlyingFlagLogo className="w-24 h-24" />
+            <h1 className="text-4xl font-bold mt-4 text-primary dark:text-dark-text-primary">Welcome to UNigeria</h1>
+            <p className="text-lg text-secondary dark:text-dark-text-secondary mt-2 max-w-2xl">
+                A new platform for civic engagement. Start conversations with digital personas of leaders, explore states, and participate in forums to build a better Nigeria.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-5xl">
+                {featureCards.map(feature => {
+                    const Icon = feature.icon;
+                    return (
+                        <div key={feature.title} className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-sm border border-ui-border dark:border-dark-ui-border">
+                            <Icon className="w-10 h-10 mx-auto text-primary-green"/>
+                            <h3 className="text-lg font-semibold mt-4 text-primary dark:text-dark-text-primary">{feature.title}</h3>
+                            <p className="text-sm text-secondary dark:text-dark-text-secondary mt-1">{feature.description}</p>
+                        </div>
+                    );
+                })}
+            </div>
+            
+            <div className="mt-12 space-y-4 max-w-md w-full">
+                <button onClick={handleRegister} className="w-full bg-primary-green text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all">Get Started</button>
+                <p className="text-sm text-secondary dark:text-dark-text-secondary">
+                    Already have an account? <button onClick={handleLogin} className="font-semibold text-primary-green hover:underline">Sign In</button>
+                </p>
+>>>>>>> master
             </div>
         </div>
     );
@@ -202,4 +244,8 @@ const Dashboard: React.FC = () => {
     );
 };
 
+<<<<<<< HEAD
 export default Dashboard;
+=======
+export default Dashboard;
+>>>>>>> master
