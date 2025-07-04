@@ -15,21 +15,12 @@ const ThemeToggleButton: React.FC = () => {
     return (
         <button
             onClick={toggleTheme}
-<<<<<<< HEAD
             className="p-2 rounded-full hover:bg-app-light dark:hover:bg-dark-app-light transition-colors"
             aria-label="Toggle dark mode"
         >
             {theme === 'light' 
                 ? <Icons.Moon className="w-6 h-6 text-gray-800" /> 
                 : <Icons.Sun className="w-6 h-6 text-accent-gold" />}
-=======
-            className="p-2 rounded-full hover:bg-app-light dark:hover:bg-dark-app-light transition-colors"
-            aria-label="Toggle dark mode"
-        >
-            {theme === 'light' 
-                ? <Icons.Moon className="w-6 h-6 text-gray-800" /> 
-                : <Icons.Sun className="w-6 h-6 text-accent-gold" />}
->>>>>>> master
         </button>
     );
 };
@@ -40,15 +31,9 @@ const QuietSpaceToggleButton: React.FC = () => {
         <button
             onClick={() => dispatch({ type: 'TOGGLE_QUIET_SPACE' })}
             className="p-2 rounded-full text-secondary hover:bg-app-light hover:text-primary transition-colors dark:text-dark-text-secondary dark:hover:bg-dark-app-light dark:hover:text-dark-text-primary"
-<<<<<<< HEAD
             aria-label="Toggle Quiet Space / Log Out"
         >
             <Icons.Power className="w-6 h-6" />
-=======
-            aria-label="Toggle Quiet Space / Log Out"
-        >
-            <Icons.Power className="w-6 h-6" />
->>>>>>> master
         </button>
     );
 }

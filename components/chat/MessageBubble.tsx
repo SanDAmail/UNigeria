@@ -69,7 +69,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-<<<<<<< HEAD
   const [displayedText, setDisplayedText] = useState('');
 
   // This effect resets the animation when the message itself is new.
@@ -86,24 +85,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
       return () => clearTimeout(timeoutId);
     }
   }, [displayedText, message.text]);
-=======
-  const [displayedText, setDisplayedText] = useState('');
-
-  // This effect resets the animation when the message itself is new.
-  useEffect(() => {
-    setDisplayedText(message.isStreaming ? '' : message.text);
-  }, [message.id]);
-
-  // This effect handles the typewriter animation.
-  useEffect(() => {
-    if (displayedText.length < message.text.length) {
-      const timeoutId = setTimeout(() => {
-        setDisplayedText(message.text.substring(0, displayedText.length + 1));
-      }, 30); // Typing speed
-      return () => clearTimeout(timeoutId);
-    }
-  }, [displayedText, message.text]);
->>>>>>> master
   
   const isAiMessage = message.sender === 'ai' || (message.type === 'post' && message.sender !== userProfile.id);
   
@@ -246,11 +227,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
   const searchHighlightClass = message.isCurrentSearchResult ? 'ring-2 ring-accent-gold ring-offset-2 ring-offset-adire-pattern dark:ring-offset-dark-primary' : '';
 
   const contentToRender = displayedText;
-<<<<<<< HEAD
   const showBlinkingCursor = isAiMessage && message.isStreaming && displayedText.length < message.text.length;
-=======
-  const showBlinkingCursor = isAiMessage && message.isStreaming && displayedText.length < message.text.length;
->>>>>>> master
 
 
   let bubbleContent;
@@ -289,11 +266,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
               ) : (
                   <>
                     <MarkdownRenderer content={contentToRender} />
-<<<<<<< HEAD
                     {showBlinkingCursor && <Icons.Pencil className="w-4 h-4 inline-block ml-1 blinking-cursor text-primary-green" />}
-=======
-                    {showBlinkingCursor && <Icons.Pencil className="w-4 h-4 inline-block ml-1 blinking-cursor text-primary-green" />}
->>>>>>> master
                   </>
               )}
                {likeCount > 0 && !isEditing && (
@@ -334,11 +307,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, persona, onRetry
     bubbleContent = (
       <div className={`flex message-bubble-enter ${bubbleAlignment}`}>
         <div className={`p-3 max-w-xl relative ${bubbleClasses} ${bubbleShape} ${searchHighlightClass} break-words`}>
-<<<<<<< HEAD
           {isUser ? <p className="whitespace-pre-wrap">{contentToRender}</p> : <><MarkdownRenderer content={contentToRender} />{showBlinkingCursor && <Icons.Pencil className="w-4 h-4 inline-block ml-1 blinking-cursor text-primary-green" />}</>}
-=======
-          {isUser ? <p className="whitespace-pre-wrap">{contentToRender}</p> : <><MarkdownRenderer content={contentToRender} />{showBlinkingCursor && <Icons.Pencil className="w-4 h-4 inline-block ml-1 blinking-cursor text-primary-green" />}</>}
->>>>>>> master
           {message.groundingChunks && message.groundingChunks.length > 0 && !message.isStreaming && <SourceCitations chunks={message.groundingChunks} />}
         </div>
       </div>

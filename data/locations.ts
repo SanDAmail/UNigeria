@@ -169,11 +169,7 @@ export const NIGERIAN_LOCATIONS: { [state: string]: { [lga: string]: string[] } 
         "Gwoza": ["Ashigashiya", "Chikide", "Gavva", "Guduf", "Gwoza", "Hambagda", "Izge", "Kirawa", "Pulka"],
         "Hawul": ["Bwala", "Gwandzang", "Hawul", "Hema", "Hizha", "Kida", "Kingking", "Marama", "Sakwa", "Shindiffu", "Tila", "Whona"],
         "Jere": ["Alau", "Bale", "Dala", "Gomari", "Gongulong", "Jere", "Maimusari", "Mashamari", "Old Maiduguri", "Tuba"],
-<<<<<<< HEAD
-        "Kaga": ["Afa", "Benisheikh", "Borno-kiji", "Dige", "Galangi", "Kag", "Mainok", "Marguba", "Ngamdu", "Tobolo", "Wajiro"],
-=======
         "Kaga": ["Afa", "Benisheikh", "Borno-kiji", "Dige", "Galangi", "Kag"، "Mainok", "Marguba", "Ngamdu", "Tobolo", "Wajiro"],
->>>>>>> master
         "Kala/Balge": ["Balge", "Fadama", "Kala", "Kulakula", "Mada", "Rann", "Sigal", "Tilam"],
         "Konduga": ["Auno", "Dalwa", "Ghide", "Kawuri", "Konduga", "Kwayam", "Mairamri", "Ngalbila", "Wanori", "Yabal"],
         "Kukawa": ["Alagarno", "Bundur", "Dogoshi", "Doro", "Kauwa", "Kekeno", "Kukawa", "Masu", "Tumbun-Allura"],
